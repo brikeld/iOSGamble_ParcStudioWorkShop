@@ -18,8 +18,8 @@
 
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* gamblingFeature.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = gamblingFeature.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		000000000000000000000320 /* iChanceUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iChanceUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000000000130 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
+		000000000000000000000320 /* iChanceUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iChanceUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */

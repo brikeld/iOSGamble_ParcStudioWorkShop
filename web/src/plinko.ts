@@ -5,25 +5,39 @@ interface Point { x: number; y: number }
 
 /**
  * The Products board, in units of the design's frame (370 wide); drawn scaled to the screen's width.
- * Rows are spaced further apart than in the frame, so the board fills the screen down to the slider.
+ * Rows are 56 apart, closer than the iPhone app's 78, so the whole board, bins included, fits above the slider on a laptop window.
  */
 export const Board = {
   width: 370,
-  height: 434,
+  height: 379,
   /** Five rows of toggles, alternating four and five, like the design. */
   toggles: ([
-    [24, [57, 129, 201, 273]], [96, [21, 93, 165, 237, 309]], [168, [57, 129, 201, 273]],
-    [240, [21, 93, 165, 237, 309]], [312, [57, 129, 201, 273]],
+    [24, [57, 129, 201, 273]], [80, [21, 93, 165, 237, 309]], [136, [57, 129, 201, 273]],
+    [192, [21, 93, 165, 237, 309]], [248, [57, 129, 201, 273]],
   ] as [number, number[]][]).flatMap(([y, xs]) => xs.map((x) => ({ x, y, w: 40, h: 17 }))),
-  binTop: 370,
-  binHeight: 64,
+  /** The bins run flush along the card's bottom, 54 tall, 60 below the last toggles. */
+  binTop: 325,
+  binHeight: 379 - 325,
   ballRadius: 11,
-  /** Where the ball appears, above the board, under the notch. */
-  spawnY: -40,
-  /** The bins' edges across the board, from 0 to its width: each bin as wide as its chance. */
+  /**
+   * The bins' edges across the board, from 0 to its width. Each bin grows with its chance from a floor,
+   * so the long shots still fit a name; the odds themselves are drawn elsewhere.
+   */
   edges(odds: number[]) {
-    return odds.reduce((e, o) => [...e, e[e.length - 1] + o * Board.width], [0])
+    const floor = 30, spare = Board.width - floor * odds.length
+    return odds.reduce((e, o) => [...e, e[e.length - 1] + floor + o * spare], [0])
   },
+}
+
+/**
+ * The drop that hangs from the top edge of the window as the slider moves, in window pixels: the ball appears
+ * where its bulb ends up. The island is the black bar it stretches from, kept just above the edge.
+ */
+export const Notch = {
+  island: { w: 124, h: 35 },
+  reach: 40,
+  maxRadius: 21,
+  spawnY: -21 * 0.6 + 40,
 }
 
 /** A toggle as the ball sees it: a capsule, i.e. a segment with a radius. */
@@ -91,13 +105,13 @@ function simulate(start: Point, edges: number[]): Run | undefined {
       if (t - lastHit[i] > 0.15) hits.push({ time: t, toggle: i, speed })
       lastHit[i] = t
     })
-    if (p.y > 0) { // the board's sides; above it the ball is still falling from the notch
+    if (p.y > 0) { // the board's sides; above it the ball is still falling in from the top of the window
       if (p.x < r) { p.x = r; v.x = Math.abs(v.x) * bounciness }
       if (p.x > Board.width - r) { p.x = Board.width - r; v.x = -Math.abs(v.x) * bounciness }
     }
     for (const x of walls) collide(p, v, { x, y: Board.binTop }, { x, y: Board.height }, 0.5)
     points.push({ x: p.x, y: p.y })
-    if (p.y > Board.binTop + Board.binHeight / 2) {
+    if (p.y > Board.binTop + 21) { // swallowed halfway into the capsule
       const i = edges.slice(1).findIndex((e) => p.x < e)
       return { points, hits, bin: Math.max((i === -1 ? edges.length - 1 : i + 1) - 1, 0), duration: points.length * dt }
     }
@@ -125,28 +139,50 @@ interface DropState {
   /** The slider's progress, 0…1: the notch stretches into a drop as you swipe. */
   notch: number
   run?: Run
+  /** The board on screen when the drop began: its top-left corner in window pixels, and its scale. */
+  frame?: { x: number; y: number; scale: number }
   started: number
   eaten: boolean
 }
 
 /** One drop's live state: the toggles, the notch stretching, and the ball's path on screen. */
 export class Drop extends Store<DropState> {
+  /** The board's element, so the ball can start from the top of the window and be placed over the page. */
+  board: HTMLElement | null = null
+
   constructor() {
     super({ toggles: Board.toggles.map(() => false), notch: 0, started: 0, eaten: false })
   }
 
   setNotch = (notch: number) => this.set({ notch })
 
-  reset() {
-    this.set({ toggles: Board.toggles.map(() => false), run: undefined, eaten: false })
+  /**
+   * Scrolls the page so the whole board, down to its bins, is above the controls: on a short window it would
+   * otherwise fall out of sight. Smooth when you start swiping; instant when the ball is released.
+   */
+  revealBoard(behavior: ScrollBehavior = 'auto') {
+    const board = this.board
+    const scroller = board?.closest<HTMLElement>('.scroll')
+    if (!board || !scroller) return
+    const overflow = board.getBoundingClientRect().bottom - (scroller.getBoundingClientRect().bottom - 8)
+    if (overflow > 0) scroller.scrollTo({ top: scroller.scrollTop + overflow, behavior })
   }
 
-  /** Releases the ball from the notch and plays its fall into `bin`: toggles flip, click and tap as it hits them. */
+  reset() {
+    this.set({ toggles: Board.toggles.map(() => false), run: undefined, frame: undefined, eaten: false })
+  }
+
+  /** Releases the ball from the top of the window and plays its fall into `bin`: toggles flip, click and tap as it hits them. */
   async play(bin: number, odds: number[]): Promise<number> {
-    const path = run({ x: Board.width / 2, y: Board.spawnY }, bin, Board.edges(odds))
+    this.revealBoard()
+    const rect = this.board?.getBoundingClientRect()
+    const scale = rect ? rect.width / Board.width : 1
+    const frame = { x: rect?.left ?? 0, y: rect?.top ?? 0, scale }
+    // The ball starts above the board, in board units: straight above its middle, at the notch's bulb.
+    const path = run({ x: Board.width / 2, y: (Notch.spawnY - frame.y) / scale }, bin, Board.edges(odds))
     Sound.spawn()
     const t0 = performance.now()
-    this.set({ notch: 0, eaten: false, started: t0, run: path })
+    this.set({ notch: 0, eaten: false, started: t0, run: path, frame })
     for (const hit of path.hits) {
       await sleep(Math.max(t0 + hit.time * 1000 - performance.now(), 0) / 1000)
       const toggles = [...this.s.toggles]

@@ -71,15 +71,17 @@ function bezier(x1: number, y1: number, x2: number, y2: number) {
 }
 const reelCurve = bezier(0.3, 0.1, 0.1, 1)
 
-/** One iChance session: what you have, the reels, and what you've paid. */
+/** One device's iChance game: what you have, the reels, and what you've paid. The iPad and the iPhone each have one. */
 export class Game extends Store<GameState> {
   /** Where the reels rest between pulls; dragging the slider turns them from here. */
   private restingReels: number[] = []
+  /** The reel symbols, made once so a jackpot can be found in each strip by identity. */
+  private symbols: Catalog.ReelSymbol[]
 
-  constructor() {
+  constructor(readonly device: Catalog.Device = Catalog.iPad) {
     super({
       mode: 'features',
-      productIndex: Catalog.startProduct,
+      productIndex: device.start,
       upgrades: 0,
       strips: [],
       reels: [],
@@ -94,38 +96,42 @@ export class Game extends Store<GameState> {
       paidDrops: 0,
       showsSummary: false,
     })
-    console.assert(Catalog.products[Catalog.startProduct].storage[0].price === Catalog.paid, 'start configuration must cost what was paid')
+    this.symbols = Catalog.featureSymbols(device)
     this.play('features')
   }
 
   // MARK: Derived
 
-  get product() { return Catalog.products[this.s.productIndex] }
-  get held() { return Catalog.upgrades.slice(0, this.s.upgrades) }
-  /** Pro Storage swaps the base storage for the iPad's largest. */
-  get storage() { return this.s.upgrades > Catalog.proStorage ? this.product.storage.at(-1)! : this.product.storage[0] }
-  get configuration() { return Catalog.describe(this.storage) }
-  /** What an upgrade is worth on the current iPad; Pro Storage is its jump to the largest storage. */
+  get product() { return this.device.products[this.s.productIndex] }
+  get held() { return this.device.upgrades.slice(0, this.s.upgrades) }
+  /** Pro Storage swaps the base storage for the product's largest. */
+  get storage() {
+    const pro = this.device.proStorage
+    return pro !== undefined && this.s.upgrades > pro ? this.product.storage.at(-1)! : this.product.storage[0]
+  }
+  get configuration() { return Catalog.describe(this.product, this.storage) }
+  /** What an upgrade is worth on the current product; Pro Storage is its jump to the largest storage. */
   priceOfUpgrade(i: number) {
-    return i === Catalog.proStorage ? this.product.storage.at(-1)!.price - this.product.storage[0].price : Catalog.upgrades[i].price
+    return i === this.device.proStorage ? this.product.storage.at(-1)!.price - this.product.storage[0].price : this.device.upgrades[i].price
   }
   get value() { return this.s.phase === 'nothing' ? 0 : this.held.reduce((sum, u) => sum + u.price, this.storage.price) }
-  get totalPaid() { return Catalog.paid + this.s.fees }
+  get paid() { return Catalog.paid(this.device) }
+  get totalPaid() { return this.paid + this.s.fees }
   get profit() { return this.value - this.totalPaid }
   get needsPayment() { return this.s.spinsLeft === 0 }
   get lostLast() { const c = this.s.change; return c ? c.upgradesLost > 0 || c.iPad < 0 : false }
-  /** On the base iPad with nothing else left to take, a loss means receiving nothing. */
+  /** On the cheapest product with nothing else left to take, a loss means receiving nothing. */
   get isLastChance() { return this.s.productIndex === 0 && this.s.upgrades === 0 }
   /** The first drop is free, then each one costs more than the last: 50, 100, 150… */
   get dropPrice() { return this.s.drops * Catalog.dropPriceStep }
   get needsDropPayment() { return this.s.drops > this.s.paidDrops }
-  /** Holding the board's best iPad: the place to go on and win its features. */
-  get hasBestTierProduct() { return this.s.productIndex === Math.max(...Catalog.boardProducts) }
+  /** Holding the board's best product: the place to go on and win its features. */
+  get hasBestTierProduct() { return this.s.productIndex === Math.max(...this.device.board) }
 
-  /** Features ends once you hold every upgrade on an iPad above the one you ordered; Products can always be played again. */
+  /** Features ends once you hold every upgrade; Products can always be played again. */
   canPlay(mode: Mode) {
-    const { phase, upgrades, productIndex } = this.s
-    return phase !== 'nothing' && (mode === 'product' || !(upgrades === Catalog.upgrades.length && productIndex > Catalog.startProduct))
+    const { phase, upgrades } = this.s
+    return phase !== 'nothing' && (mode === 'product' || upgrades < this.device.upgrades.length)
   }
 
   // MARK: Actions
@@ -135,7 +141,7 @@ export class Game extends Store<GameState> {
       // A fresh machine must not already show three of a kind.
       let strips: Catalog.ReelSymbol[][]
       do {
-        strips = [0, 1, 2].map(() => shuffled(Catalog.featureSymbols))
+        strips = [0, 1, 2].map(() => shuffled(this.symbols))
       } while (new Set(strips.map((s) => s[0])).size === 1)
       const reels = strips.map(() => 0)
       this.restingReels = reels
@@ -148,12 +154,12 @@ export class Game extends Store<GameState> {
   }
 
   /**
-   * Nothing, then every board iPad but yours. The closer a bin's price to your iPad's, the likelier the ball
+   * Nothing, then every board product but yours. The closer a bin's price to your product's, the likelier the ball
    * lands in it: odds go as one over the price gap, so a long shot is a narrow box. Nothing is priced at $0.
    */
   private newRound() {
-    const price = (i?: number) => (i === undefined ? 0 : Catalog.products[i].storage[0].price)
-    const bins = [undefined, ...Catalog.boardProducts.filter((p) => p !== this.s.productIndex)]
+    const price = (i?: number) => (i === undefined ? 0 : this.device.products[i].storage[0].price)
+    const bins = [undefined, ...this.device.board.filter((p) => p !== this.s.productIndex)]
     const weights = bins.map((b) => 1 / Math.abs(price(b) - price(this.s.productIndex)))
     const total = weights.reduce((a, b) => a + b, 0)
     this.set({ bins, odds: weights.map((w) => w / total), landedBin: undefined })
@@ -221,8 +227,8 @@ export class Game extends Store<GameState> {
     if (s.mode !== 'features' || s.phase !== 'idle' || !this.canPlay('features') || this.needsPayment) return
     this.set({ phase: 'spinning', spinsLeft: s.spinsLeft - 1, spins: s.spins + 1 })
     const win = Math.random() < Odds.winChance
-    // The jackpot shows what this pull is for: the next upgrade, or the next iPad.
-    const jackpot = Catalog.featureSymbols[s.upgrades]
+    // The jackpot shows what this pull is for: the next upgrade.
+    const jackpot = this.symbols[s.upgrades]
     const stops = Odds.stops(win)
 
     // Reels start together and stop left to right; a harder swipe keeps them going longer.
@@ -241,7 +247,7 @@ export class Game extends Store<GameState> {
   }
 
   /**
-   * A win adds the next upgrade, and with all of them the iPad above. A loss takes every upgrade
+   * A win adds the next upgrade; Features never moves the iPad up. A loss takes every upgrade
    * but keeps the iPad; with none left, it drops an iPad and hands back an Apple Pencil, and on the last iPad
    * it takes the iPad itself.
    */
@@ -250,13 +256,8 @@ export class Game extends Store<GameState> {
     const change: Change = { upgradesLost: 0, iPad: 0 }
     let patch: Partial<GameState>
     if (win) {
-      if (upgrades < Catalog.upgrades.length) {
-        change.upgradeWon = upgrades
-        patch = { phase: 'won', upgrades: upgrades + 1 }
-      } else {
-        change.iPad = 1
-        patch = { phase: 'won', productIndex: productIndex + 1 }
-      }
+      change.upgradeWon = upgrades
+      patch = { phase: 'won', upgrades: upgrades + 1 }
     } else if (this.isLastChance) {
       patch = { phase: 'nothing' }
     } else if (upgrades > 0) {
@@ -313,7 +314,7 @@ export function selfCheck(): string[] {
   down.settle(true)
   down.settle(true)
   down.settle(false)
-  check(down.s.productIndex === Catalog.startProduct && down.s.upgrades === 0, 'a loss on your iPad takes your upgrades')
+  check(down.s.productIndex === Catalog.iPad.start && down.s.upgrades === 0, 'a loss on your iPad takes your upgrades')
   down.settle(false)
   check(down.s.productIndex === 1 && down.s.upgrades === 1, 'with none left, it drops an iPad and hands back the Pencil')
   down.settle(true)
@@ -328,8 +329,15 @@ export function selfCheck(): string[] {
   check(down.s.phase === 'nothing', 'then itself')
 
   const up = new Game()
-  for (let i = 0; i <= Catalog.upgrades.length; i++) up.settle(true)
-  check(up.s.productIndex === Catalog.startProduct + 1 && up.s.upgrades === Catalog.upgrades.length && !up.canPlay('features'),
-    'every upgrade, then the iPad above ends Features')
+  for (let i = 0; i < Catalog.iPad.upgrades.length; i++) up.settle(true)
+  check(up.s.productIndex === Catalog.iPad.start && up.s.upgrades === Catalog.iPad.upgrades.length && !up.canPlay('features'),
+    'every upgrade ends Features, on the same iPad')
+
+  // The iPhone fills up the same way, with no Pro Storage to price.
+  const phone = new Game(Catalog.iPhone)
+  check(phone.value === Catalog.paid(Catalog.iPhone) && phone.profit === 0, 'the iPhone starts as ordered')
+  for (let i = 0; i < Catalog.iPhone.upgrades.length; i++) phone.settle(true)
+  check(phone.product.name === 'iPhone Air' && phone.value === 1099 + 39 + 49 + 199 + 249 && !phone.canPlay('features'),
+    'every iPhone upgrade, on the same iPhone')
   return failures
 }

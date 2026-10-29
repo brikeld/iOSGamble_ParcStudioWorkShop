@@ -1,3 +1,6 @@
+import { BackButton } from './BackButton'
+import { Symbol } from './Symbol'
+import { BallLayer } from './BallLayer'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import * as Catalog from './catalog'
 import { ApplePaySheet } from './ApplePaySheet'
@@ -20,7 +23,7 @@ const prizeLabel: Record<Prize, string> = {
   idle: 'Not won', next: 'Playing for this', won: 'Won', justWon: 'Won', justLost: 'Lost',
 }
 
-/** Features is a slot machine; Products drops a ball from the notch through a board of toggles. */
+/** Features is a slot machine; Products drops a ball from the top of the window through a board of toggles. */
 export function GameView({ onBack }: { onBack: () => void }) {
   const game = useGame()
   const s = useStore(game)
@@ -46,16 +49,19 @@ export function GameView({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="game">
+      {s.mode === 'product' && <BallLayer drop={drop} />}
       <header className="bar">
-        <button className="link" onClick={onBack} disabled={s.phase === 'spinning'}>‹ Back</button>
+        <BackButton onClick={onBack} disabled={s.phase === 'spinning'} />
         <h2>{s.mode === 'features' ? 'Features' : 'Products'}</h2>
         <div className="menu-wrap">
-          <button className="round" aria-label="More" disabled={s.phase === 'spinning'} onClick={() => setMenu(!menu)}>⋯</button>
+          <button className="glass-circle" aria-label="More" disabled={s.phase === 'spinning'} onClick={() => setMenu(!menu)}>
+            <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor" aria-hidden="true"><circle cx="2" cy="2" r="2" /><circle cx="8" cy="2" r="2" /><circle cx="14" cy="2" r="2" /></svg>
+          </button>
           {menu && (
             <div className="menu" onMouseLeave={() => setMenu(false)}>
               <span className="menu-title">Gamble</span>
-              <button disabled={s.mode === 'features' || !game.canPlay('features')} onClick={() => switchTo('features')}>🎰 Features</button>
-              <button disabled={s.mode === 'product' || !game.canPlay('product')} onClick={() => switchTo('product')}>🔀 Products</button>
+              <button disabled={s.mode === 'features' || !game.canPlay('features')} onClick={() => switchTo('features')}><Symbol className="menu-icon" icon="/icons/features.svg" /> Features</button>
+              <button disabled={s.mode === 'product' || !game.canPlay('product')} onClick={() => switchTo('product')}><Symbol className="menu-icon" icon="/icons/products.svg" /> Products</button>
               <hr />
               <button onClick={() => { setMenu(false); game.showSummary(true) }}>🚪 Leave iChance</button>
             </div>
@@ -67,7 +73,7 @@ export function GameView({ onBack }: { onBack: () => void }) {
         <div className="empty">
           <div className="empty-icon">📦</div>
           <h2>You’ll receive nothing.</h2>
-          <p className="secondary">You paid {dollars(game.totalPaid)}. Nothing will be delivered.</p>
+          <p className="secondary">You paid {dollars(game.totalPaid)}. Your {game.device.kind} won’t be delivered.</p>
           <button className="prominent" onClick={() => game.showSummary(true)}>View Summary</button>
         </div>
       ) : (
@@ -86,7 +92,7 @@ export function GameView({ onBack }: { onBack: () => void }) {
       {confirmsLastChance && (
         <Alert
           title="Are You Sure?"
-          message={`This is your last iPad. If you lose this spin, you lose everything: you paid ${dollars(game.totalPaid)} and nothing will be delivered.`}
+          message={`This is your last ${game.device.kind}. If you lose this spin, you lose it: you paid ${dollars(game.totalPaid)} and no ${game.device.kind} will be delivered.`}
           confirm="Spin"
           onCancel={() => { setConfirmsLastChance(false); game.nudge(0) }}
           onConfirm={() => { setConfirmsLastChance(false); void game.pull(0.5) }}
@@ -97,14 +103,18 @@ export function GameView({ onBack }: { onBack: () => void }) {
 
   function machine(): ReactNode {
     const moment = s.isMoment ? s.change : undefined
-    // An iPad below the one you ordered is outlined orange, above it green; the card itself stays white.
-    const iPad: Outcome | undefined = s.productIndex < Catalog.startProduct ? 'lost' : s.productIndex > Catalog.startProduct ? 'won' : undefined
+    // A product below the one you ordered is outlined orange, above it green; the card itself stays white.
+    const start = game.device.start
+    const tier: Outcome | undefined = s.productIndex < start ? 'lost' : s.productIndex > start ? 'won' : undefined
+    const upgrades = game.device.upgrades
+    const left = upgrades.length - 1
+    const tall = left * 38 + (left - 1) * 8
     const slotOutcome: Outcome | undefined = s.phase === 'won' ? 'won' : s.phase === 'lost' ? 'lost' : undefined
     return (
       <div className="machine">
         <h3 className="header">Your Product</h3>
-        <div className={`product-card ${iPad ?? ''}`}>
-          <ProductRow name={game.product.name} image={Catalog.productImage(game.product)} configuration={game.configuration} />
+        <div className={`product-card ${tier ?? ''}`}>
+          <ProductRow name={game.product.name} image={Catalog.productImage(game.product)} imageHeight={46} configuration={game.configuration} />
           {/* Products has no winnings header, so the card carries the running total, as in the design. */}
           {s.mode === 'product' && game.profit !== 0 && (
             <strong className={game.profit > 0 ? 'won-text' : 'lost-text'}>{profitText(game.profit)}</strong>
@@ -120,8 +130,9 @@ export function GameView({ onBack }: { onBack: () => void }) {
               </span>
             </div>
             <div className="winnings">
-              <div className="col">{[0, 1, 2].map((i) => capsule(i, moment, 38, 'left'))}</div>
-              <div className="col">{[3, 4].map((i) => capsule(i, moment, 61, 'center'))}</div>
+              {/* Every upgrade but the last on the left; the last, the AirPods, as one tile as tall as the left column. */}
+              <div className="col">{upgrades.slice(0, left).map((_, i) => capsule(i, moment, 38, 'left'))}</div>
+              <div className="col">{upgrades.slice(left).map((_, i) => capsule(left + i, moment, tall, 'center'))}</div>
             </div>
 
             <div className="between header-row">
@@ -131,14 +142,20 @@ export function GameView({ onBack }: { onBack: () => void }) {
             <SlotMachine strips={s.strips} positions={s.reels} outcome={slotOutcome} />
           </>
         ) : (
-          // Landing on the iPad you already have shows no colour: nothing gained, nothing lost.
-          <TierBoard
-            bins={s.bins.map((b) => (b === undefined ? 'Nothing' : Catalog.products[b].name))}
-            odds={s.odds}
-            landed={s.landedBin}
-            outcome={s.change?.iPad === 0 ? undefined : s.phase === 'won' ? 'won' : s.phase === 'lost' ? 'lost' : undefined}
-            drop={drop}
-          />
+          <>
+            <div className="between header-row">
+              <h3 className="header">Board</h3>
+              <span className="footnote secondary">{s.drops === 0 ? 'First drop free' : s.drops === 1 ? '1 drop' : `${s.drops} drops`}</span>
+            </div>
+            {/* Landing on the product you already have shows no colour: nothing gained, nothing lost. */}
+            <TierBoard
+              bins={s.bins.map((b) => (b === undefined ? undefined : game.device.products[b]))}
+              odds={s.odds}
+              landed={s.landedBin}
+              outcome={s.change?.iPad === 0 ? undefined : s.phase === 'won' ? 'won' : s.phase === 'lost' ? 'lost' : undefined}
+              drop={drop}
+            />
+          </>
         )}
       </div>
     )
@@ -154,13 +171,13 @@ export function GameView({ onBack }: { onBack: () => void }) {
 
   /** `price` shows during the moment: what was just won or lost, in the outline's colour. */
   function capsule(i: number, moment: Change | undefined, height: number, align: 'left' | 'center'): ReactNode {
-    const upgrade = Catalog.upgrades[i]
+    const upgrade = game.device.upgrades[i]
     const state = prizeState(i, moment)
     // The price takes the icon's place for the moment: name, icon and price don't all fit in a short capsule.
     const showsPrice = state === 'justWon' || state === 'justLost'
     return (
       <div key={upgrade.name} className={`capsule ${state} ${align}`} style={{ height }} aria-label={`${upgrade.name}: ${prizeLabel[state]}`}>
-        {!showsPrice && <span className="capsule-icon">{upgrade.icon}</span>}
+        {!showsPrice && <Symbol className="capsule-icon" icon={upgrade.icon} />}
         <span className="capsule-name">{upgrade.name}</span>
         {showsPrice && <strong className="capsule-price">{(state === 'justWon' ? '+' : '−') + dollars(game.priceOfUpgrade(i))}</strong>}
       </div>
@@ -172,14 +189,15 @@ export function GameView({ onBack }: { onBack: () => void }) {
     // Also when a drop is owed: coming back from Features after a drop, the next one must be paid for first.
     if (!s.isMoment && (s.phase === 'won' || s.phase === 'lost' || (s.phase === 'idle' && game.needsDropPayment))) {
       return (
-        <div className="choices">
-          {/* On the best iPad another drop can only go down; offer to win its features instead. */}
+        // Side by side, in the slider's height, so the board above never has to make room.
+        <div className="choices row-choices" style={{ height: SLIDER_HEIGHT }}>
+          <button className="glass" data-testid="keep" onClick={() => game.showSummary(true)}>Take winnings</button>
+          {/* On the best product another drop can only go down; offer to win its features instead. */}
           {game.hasBestTierProduct && game.canPlay('features') ? (
-            <button className="prominent" data-testid="gambleFeatures" onClick={() => game.play('features')}>🎰 Gamble for features</button>
+            <button className="prominent" data-testid="gambleFeatures" onClick={() => game.play('features')}>Gamble for features</button>
           ) : (
             <button className="prominent" data-testid="anotherTry" onClick={() => setPaysForDrop(true)}>{dollars(game.dropPrice)} for another try</button>
           )}
-          <button className="glass" data-testid="keep" onClick={() => game.showSummary(true)}>Take winnings</button>
         </div>
       )
     }
@@ -187,7 +205,10 @@ export function GameView({ onBack }: { onBack: () => void }) {
       <SlideToSpin
         label="Swipe to win"
         disabled={s.phase !== 'idle'}
-        onDrag={drop.setNotch}
+        onDrag={(progress) => {
+          if (progress > 0 && drop.s.notch === 0) drop.revealBoard('smooth') // the board's bins must be in view for the fall
+          drop.setNotch(progress)
+        }}
         onAction={() => {
           const bin = game.startDrop()
           if (bin === undefined) { drop.setNotch(0); return }

@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { BackButton } from './BackButton'
+import { devices } from './catalog'
 import { GameContext } from './context'
 import { Game } from './game'
+import { FaceIDIntro } from './FaceIDIntro'
 import { GameView } from './GameView'
 import { ChooseGameView, OrderView, SummaryView } from './Screens'
 import { Sheet } from './Sheet'
@@ -8,27 +11,41 @@ import { useStore } from './store'
 
 type Screen = 'order' | 'choose' | 'game'
 
+const newGames = () => devices.map((device) => new Game(device))
+
 export function App() {
-  const [game, setGame] = useState(() => new Game())
+  // One game per ordered device, each keeping its own progress; `current` is the one being played.
+  const [games, setGames] = useState(newGames)
+  const [current, setCurrent] = useState(0)
   const [screen, setScreen] = useState<Screen>('order')
+  // Face ID and the payment chime play before the order confirmation is shown: it appears as the intro fades out.
+  const [verified, setVerified] = useState(false)
+  const [introGone, setIntroGone] = useState(false)
+  const finishVerifying = useCallback(() => setVerified(true), [])
+  const removeIntro = useCallback(() => setIntroGone(true), [])
+  const game = games[current]
   const s = useStore(game)
 
   return (
     <GameContext.Provider value={game}>
       <div className="app">
-        {screen === 'order' && <OrderView onTry={() => setScreen('choose')} />}
+        {!introGone && <FaceIDIntro onVerified={finishVerifying} onDone={removeIntro} />}
+        {verified && screen === 'order' && <OrderView onTry={() => setScreen('choose')} />}
         {screen === 'choose' && (
           <>
-            <header className="bar"><button className="link" onClick={() => setScreen('order')}>‹ Back</button></header>
-            <ChooseGameView onChoose={(mode) => { game.play(mode); setScreen('game') }} />
+            <header className="bar"><BackButton onClick={() => setScreen('order')} /></header>
+            <ChooseGameView current={current} onSelect={setCurrent} onChoose={(mode) => { game.play(mode); setScreen('game') }} />
           </>
         )}
-        {screen === 'game' && <GameView onBack={() => setScreen('choose')} />}
+        {screen === 'game' && <GameView key={current} onBack={() => setScreen('choose')} />}
 
         {/* The summary can only be closed with Done, which ends the session. */}
         {s.showsSummary && (
           <Sheet tall>
-            <SummaryView onDone={() => { setGame(new Game()); setScreen('order') }} />
+            <SummaryView
+              games={games}
+              onDone={() => { setGames(newGames()); setCurrent(0); setScreen('order') }}
+            />
           </Sheet>
         )}
       </div>

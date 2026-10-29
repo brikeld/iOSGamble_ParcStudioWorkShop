@@ -1,11 +1,18 @@
 import XCTest
 
 final class iChanceUITests: XCTestCase {
+    /// Waits out the Face ID intro that opens the app, then taps through the order screen.
+    private func openIChance(_ app: XCUIApplication) {
+        let tryButton = app.buttons["Try iChance"]
+        XCTAssert(tryButton.waitForExistence(timeout: 10), "the Face ID intro must lead to the order screen")
+        tryButton.tap()
+    }
+
     /// Drags the real slider: a half slide springs back, a full slide spins and lands on a win or a drop.
     func testSlideToSpin() throws {
         let app = XCUIApplication()
         app.launch()
-        app.buttons["Try iChance"].tap()
+        openIChance(app)
         app.staticTexts["Features"].tap()
 
         let slider = app.buttons["Swipe to win"]
@@ -26,7 +33,7 @@ final class iChanceUITests: XCTestCase {
     func testProductTierDrop() throws {
         let app = XCUIApplication()
         app.launch()
-        app.buttons["Try iChance"].tap()
+        openIChance(app)
         app.staticTexts["Products"].tap()
 
         let slider = app.buttons["Swipe to win"]
@@ -56,7 +63,7 @@ final class iChanceUITests: XCTestCase {
     func testPayForMoreSpins() throws {
         let app = XCUIApplication()
         app.launch()
-        app.buttons["Try iChance"].tap()
+        openIChance(app)
         app.staticTexts["Features"].tap()
 
         for _ in 0..<4 {

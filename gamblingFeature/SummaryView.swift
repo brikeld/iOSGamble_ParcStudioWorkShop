@@ -4,6 +4,9 @@ import SwiftUI
 /// Each device shows what was ordered, faded, above what you'll receive, joined by what changed.
 struct SummaryView: View {
     let games: [Game]
+    /// Hides the summary and goes back to the game, keeping everything as it was.
+    var onClose: () -> Void
+    /// Ends the session.
     var onDone: () -> Void
 
     var body: some View {
@@ -36,11 +39,15 @@ struct SummaryView: View {
                     .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 26))
                 }
                 .padding(.horizontal, 16)
+                .padding(.top, 10)  // plus the first header's own 14 pt: 24 pt below the navigation bar
                 .padding(.bottom, 24)
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Summary")
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close", systemImage: "xmark", role: .cancel, action: onClose)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done", action: onDone)
                 }
@@ -191,4 +198,9 @@ private struct DeviceResult: View {
             .background(outcome.map { $0 == .won ? Color.green.opacity(0.2) : Color.orange.opacity(0.16) } ?? Color(.tertiarySystemFill),
                         in: .capsule)
     }
+}
+
+#Preview {
+    SummaryView(games: Catalog.devices.map { Game(device: $0) }, onClose: {}, onDone: {})
+        .frame(width: 402, height: 660)  // an iPhone 17 Pro's width; shorter than the phone so the canvas doesn't crop the nav bar
 }

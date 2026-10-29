@@ -5,6 +5,8 @@ struct ChooseGameView: View {
     @Binding var current: Int
 
     @Environment(Game.self) private var game
+    /// The Features card hugs its text; the Products card is held to this height so the two cards match.
+    @State private var featuresHeight: CGFloat?
 
     var body: some View {
         List {
@@ -52,7 +54,9 @@ struct ChooseGameView: View {
                 NavigationLink(value: Screen.game(.features)) {
                     choice(symbol: "gauge.with.dots.needle.67percent", title: "Features",
                            detail: "Max out your \(game.device.kind)’s technical configuration and experience.")
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { featuresHeight = $0 }
                 }
+                .listRowInsets(.vertical, 0)
                 .navigationLinkIndicatorVisibility(.hidden)
             } header: {
                 header("Betting Options")
@@ -61,11 +65,15 @@ struct ChooseGameView: View {
                 NavigationLink(value: Screen.game(.product)) {
                     choice(symbol: "arrow.turn.up.forward.iphone", title: "Products",
                            detail: "Upgrade your product to another tier.")
+                        .frame(height: featuresHeight)  // as tall as the Features card, content centred
                 }
+                .listRowInsets(.vertical, 0)
                 .navigationLinkIndicatorVisibility(.hidden)
             }
         }
         .listSectionSpacing(.compact)
+        // 24 pt between the back button and the iChance card: the list adds about 10 pt of its own below the bar.
+        .contentMargins(.top, 14, for: .scrollContent)
     }
 
     private func header(_ title: String) -> some View {
@@ -97,7 +105,7 @@ struct ChooseGameView: View {
                 .frame(width: 16, height: 16)
                 .foregroundStyle(.black.opacity(0.35))
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 16)  // the whole gap above and below: the row's own vertical insets are zeroed
     }
 }
 
@@ -123,4 +131,15 @@ struct UpgradeRow: View {
                 .font(.subheadline.weight(.semibold))
         }
     }
+}
+
+#Preview("Choose, pushed under the back button") {
+    @Previewable @State var path = [Screen.choose]
+    NavigationStack(path: $path) {
+        Color.clear.navigationDestination(for: Screen.self) { _ in
+            ChooseGameView(current: .constant(0))
+        }
+    }
+    .environment(Game(device: Catalog.devices[0]))
+    .frame(width: 402, height: 874)  // an iPhone 17 Pro's screen, so the text wraps as it does there
 }

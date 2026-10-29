@@ -1,3 +1,4 @@
+import { Symbol } from './Symbol'
 import type { ReactNode } from 'react'
 import type { ReelSymbol } from './catalog'
 
@@ -62,7 +63,7 @@ function Reel({ strip, position, outcome }: { strip: ReelSymbol[]; position: num
           className={`face ${outcome ?? ''}`}
           style={{ height: ROW_HEIGHT - 16, opacity: 0.3 + 0.7 * emphasis, ['--emphasis' as string]: emphasis }}
         >
-          {symbol.icon ?? symbol.text}
+          {symbol.icon ? <Symbol icon={symbol.icon} /> : symbol.text}
         </div>
       </div>,
     )

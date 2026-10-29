@@ -6,13 +6,15 @@ interface Props {
   onBackdrop?: () => void
   /** Fills the screen, like a full-height page sheet. */
   tall?: boolean
+  /** Floats in from the edges with fully rounded corners, over a lighter dimming, like the Apple Pay sheet. */
+  floating?: boolean
 }
 
 /** A bottom sheet over a dimmed backdrop. */
-export function Sheet({ children, onBackdrop, tall }: Props) {
+export function Sheet({ children, onBackdrop, tall, floating }: Props) {
   return (
-    <div className="backdrop" onClick={onBackdrop}>
-      <div className={`sheet ${tall ? 'tall' : ''}`} onClick={(e) => e.stopPropagation()}>{children}</div>
+    <div className={`backdrop ${floating ? 'light' : ''}`} onClick={onBackdrop}>
+      <div className={`sheet ${tall ? 'tall' : ''} ${floating ? 'floating' : ''}`} onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   )
 }

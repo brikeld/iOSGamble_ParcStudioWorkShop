@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Ticker } from './sounds'
 
-/** The knob fills the track's height, as in the design. */
-export const SLIDER_HEIGHT = 58
-const KNOB = 58
+/** The knob sits just inside the track, concentric with its rounded ends, like "slide to power off". */
+export const SLIDER_HEIGHT = 66
+const INSET = 4
+const KNOB = SLIDER_HEIGHT - INSET * 2
 
 interface Props {
   label: string
@@ -14,14 +15,17 @@ interface Props {
   onAction: (power: number) => void
 }
 
-/** The "slide to power off" control: drag the knob all the way right, or flick it, to spin. */
+/**
+ * The "slide to answer" control: drag the knob all the way right, or flick it, to spin. As on the call screen,
+ * the track's left end follows the knob, and the label stays put while the knob slides over it.
+ */
 export function SlideToSpin({ label, disabled = false, onDrag, onAction }: Props) {
   const track = useRef<HTMLDivElement>(null)
   const [offset, setOffset] = useState(0)
   const [glide, setGlide] = useState<'none' | 'out' | 'back'>('none')
   const drag = useRef<{ startX: number; samples: { x: number; t: number }[]; fired: boolean } | null>(null)
 
-  const travel = () => Math.max((track.current?.clientWidth ?? 0) - KNOB, 1)
+  const travel = () => Math.max((track.current?.clientWidth ?? 0) - KNOB - INSET * 2, 1)
 
   // Disabling the slider mid-swipe must not leave it stuck.
   useEffect(() => {
@@ -69,27 +73,28 @@ export function SlideToSpin({ label, disabled = false, onDrag, onAction }: Props
 
   const up = () => {
     const d = drag.current
-    drag.current = null
-    if (!d || d.fired || disabled) return
+    if (!d || d.fired || disabled) {
+      drag.current = null
+      return
+    }
     const max = travel()
     const v = velocity()
-    d.fired = false
     if (offset + v * 0.2 >= max) {
       // Inertia: a flick carries the knob the rest of the way at its own speed.
-      drag.current = d
       fire()
       drag.current = null
       setGlide('out')
       setOffset(max)
       setTimeout(() => { setGlide('back'); setOffset(0) }, Math.min(Math.max(((max - offset) / Math.max(v, 1)) * 1000, 80), 300))
     } else {
+      drag.current = null
       setGlide('back')
       onDrag?.(0)
       setOffset(0)
     }
   }
 
-  const progress = offset / travel()
+  const transition = glide === 'none' ? 'none' : glide === 'out' ? '.2s ease-out' : '.35s cubic-bezier(.4, 0, .2, 1)'
   return (
     <div
       ref={track}
@@ -101,14 +106,28 @@ export function SlideToSpin({ label, disabled = false, onDrag, onAction }: Props
       aria-disabled={disabled}
       onKeyDown={(e) => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) onAction(0.5) }}
     >
-      <div className="slider-label shimmer" style={{ opacity: 1 - progress * 2, paddingLeft: KNOB }}>{label}</div>
+      {/* The track's left end follows the knob. */}
+      <div className="slider-track" style={{ left: offset, transition: transition === 'none' ? 'none' : `left ${transition}` }} />
+      {/* Cut off from the knob's middle, so none of it shows in the gap between the knob and the track's end. */}
+      <div
+        className="slider-label shimmer"
+        style={{
+          paddingLeft: KNOB + INSET,
+          clipPath: `inset(0 0 0 ${offset + INSET + KNOB / 2}px)`,
+          transition: transition === 'none' ? 'none' : `clip-path ${transition}`,
+        }}
+      >
+        {label}
+      </div>
       <div
         className="slider-knob"
         style={{
           width: KNOB,
           height: KNOB,
+          left: INSET,
+          top: INSET,
           transform: `translateX(${offset}px)`,
-          transition: glide === 'none' ? 'none' : glide === 'out' ? 'transform .2s ease-out' : 'transform .5s cubic-bezier(.34,1.56,.64,1)',
+          transition: transition === 'none' ? 'none' : `transform ${transition}`,
         }}
         onPointerDown={down}
         onPointerMove={move}

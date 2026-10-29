@@ -28,7 +28,6 @@ struct OrderView: View {
                     }
                     .font(.footnote)
                 }
-                .padding(.top, 16)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16))
             }
@@ -65,6 +64,7 @@ struct OrderView: View {
             }
         }
         .listSectionSpacing(16)
+        .contentMargins(.top, 24, for: .scrollContent)  // 24 pt below the status bar
         .scrollBounceBehavior(.basedOnSize)
     }
 
@@ -91,4 +91,9 @@ struct OrderView: View {
         }
         .padding(.vertical, 8)
     }
+}
+
+#Preview {
+    OrderView {}
+        .frame(width: 402, height: 874)  // an iPhone 17 Pro's screen, so the text wraps as it does there
 }

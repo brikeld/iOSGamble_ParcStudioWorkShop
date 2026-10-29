@@ -1,5 +1,7 @@
+@font-face { font-family: 'SF Pro'; font-weight: 100 900; font-style: normal; font-display: swap; src: url('/fonts/SF-Pro.woff2') format('woff2'); }
+
 :root {
-  --bg: #f2f2f7;
+  --bg: #f4f4f4;
   --card: #fff;
   --dark: #1c1c1e;
   --label: #000;
@@ -13,7 +15,8 @@
   --won-fill: rgba(52, 199, 89, 0.2);
   --lost: #ff9500;
   --lost-fill: #ffbc7f;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color: var(--label);
   -webkit-tap-highlight-color: transparent;
 }
@@ -24,6 +27,8 @@ body { background: #d8d8dc; overscroll-behavior: none; }
 button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
 button:disabled { opacity: 0.4; cursor: default; }
 h1, h2, h3, p { margin: 0; }
+/* Apple uses the Display cut at 20pt and above. */
+h1, .thanks, .large { font-family: var(--font-display); }
 hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; }
 
 /* A phone-width column, centred on larger screens. */
@@ -47,6 +52,7 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .won-text { color: var(--won); }
 .lost-text { color: var(--lost); }
 .chev { color: var(--tertiary); font-size: 22px; }
+.choice-chev { flex: none; color: var(--tertiary); }
 .between { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .stack { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 
@@ -57,50 +63,111 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; gap: 12px; min-height: 52px; }
 .bar h2 { font-size: 17px; flex: 1; }
 .link { color: var(--tint); font-size: 17px; }
+.glass-circle { /* Figma "Button - Liquid Glass - Symbol": three stacked fills (white 65%, #ddd colour-burn, #f7f7f7 darken) and a wide, faint shadow */
+  width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #1a1a1a;
+  background:
+    linear-gradient(#f7f7f7, #f7f7f7),
+    linear-gradient(#ddd, #ddd),
+    linear-gradient(rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.65));
+  background-blend-mode: darken, color-burn, normal;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
 .round { width: 36px; height: 36px; border-radius: 50%; background: rgba(120, 120, 128, 0.16); font-size: 18px; }
 
 /* Order */
-.plain { padding: 16px 4px; display: flex; flex-direction: column; gap: 16px; }
-.thanks { font-size: 24px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.seal { background: #34c759; color: #fff; width: 26px; height: 26px; border-radius: 50%; font-size: 16px; display: grid; place-items: center; }
-.legal { font-size: 12px; color: var(--secondary); padding: 0 8px 16px; }
+.plain { padding: 0; display: flex; flex-direction: column; gap: 32px; }
+.order-page { gap: 16px; }
+.order-page .plain { margin-bottom: 16px; } /* 16px page gap + 16px = Figma's 32px below the order details */
+.order-page .legal { margin-top: -8px; } /* Figma: 8px between the offer card and the disclaimer */
+.confirmation { display: flex; flex-direction: column; gap: 8px; }
+.confirmation .body { font-size: 14px; letter-spacing: -0.14px; max-width: 321px; }
+.order-meta { display: flex; flex-direction: column; gap: 4px; font-size: 12px; letter-spacing: -0.12px; }
+.order-meta u { color: #0094e4; text-underline-position: from-font; text-decoration-thickness: from-font; }
+.thanks { font-size: 24px; font-weight: 590; line-height: normal; display: flex; align-items: center; gap: 8px; }
+.seal { width: 21px; height: 21px; flex: none; background: var(--won); mask: url(/icons/order-confirmed.svg) center / contain no-repeat; -webkit-mask: url(/icons/order-confirmed.svg) center / contain no-repeat; }
+.legal { font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 12px; font-weight: 400; letter-spacing: -0.12px; color: #919191; padding: 0 16px 16px; }
 
 /* Lists */
 .card-list { background: var(--card); border-radius: 20px; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
 .card-list.dark { background: var(--dark); color: #fff; }
 .card-list.dark p { color: #ebebf5; opacity: 0.8; }
 .row { display: flex; align-items: center; gap: 32px; }
-.row.spaced { align-items: flex-start; }
-.row-text { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
-.row-icon { width: 46px; text-align: center; font-size: 24px; }
-.row-name { font-size: 15px; }
+.product-text { font-size: 12px; letter-spacing: -0.12px; white-space: nowrap; }
+.product-list { padding: 16px; gap: 16px; border-radius: 22px; }
+.product-list hr { margin: 0; border-top-color: #e6e6e6; }
+.product-text hr { margin: 0 0 -8px; } /* the 8px below the rule is the Qty row's padding, not the stack gap */
+.product-text .between { padding-top: 8px; }
+.product-info { gap: 24px; }
+.thumb { flex: none; width: 50px; display: flex; align-items: center; justify-content: flex-start; }
+.row img { width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
+.row-icon { width: 50px; text-align: center; font-size: 24px; }
+.row-name { font-size: 12px; letter-spacing: -0.12px; font-weight: 590; }
 .large { font-size: 34px; font-weight: 700; }
-.choice { display: flex; align-items: center; gap: 16px; text-align: left; padding: 8px 0; width: 100%; }
-.choice > span:nth-child(2) { flex: 1; }
-.choice-icon { font-size: 24px; }
+.choose-page strong { font-weight: 590; }
+.choose-page .large { font-weight: 590; }
+.choose-page .footnote { letter-spacing: -0.13px; font-weight: 400; }
+.choose-page .card-list.dark p { color: #a0a0a0; opacity: 1; }
+.choose-page .product-text { font-size: 14px; letter-spacing: -0.14px; gap: 4px; }
+.choose-page .product-text .secondary { color: #afafaf; }
+.choose-page .row-name { font-size: 14px; letter-spacing: -0.14px; }
+.choose-page .header { font-size: 12px; color: #a9a9a9; }
+.choose-intro { background: #1c1c1d; border-radius: 22px; padding: 16px; gap: 2px; }
+.choose-page .choose-intro .large { font-size: 32px; font-weight: 590; letter-spacing: -0.32px; line-height: normal; }
+.choose-page .choose-intro p { font-size: 12px; line-height: normal; letter-spacing: -0.12px; color: #a0a0a0; opacity: 1; max-width: 277px; }
+.choose-page .segmented button { font-size: 13px; font-weight: 400; letter-spacing: -0.08px; }
+.choose-page .segmented button.selected { font-weight: 590; }
+/* iOS 26 segmented control: a capsule track with a capsule thumb. */
+.choose-page .segmented { height: 32px; padding: 2px; border-radius: 999px; background: rgba(118, 118, 128, 0.12); }
+.choose-page .segmented button { padding: 0 8px; border-radius: 999px; transition: background .2s, box-shadow .2s; }
+.choose-page .segmented button.selected { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1); }
+.choice-group { display: grid; grid-auto-rows: 1fr; gap: 12px; } /* equal-height cards, whatever the description's length */
+.choice-card { padding: 16px; border-radius: 22px; }
+.choice { flex: 1; display: flex; align-items: center; gap: 32px; text-align: left; padding: 0; width: 100%; }
+.choice-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 17px; } /* the icon is centred on the whole card, not on the title */
+.choice-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.choice-body strong { font-size: 16px; letter-spacing: -0.16px; }
+.choice-icon { width: 33px; height: 26px; margin-left: -4px; flex: none; background: var(--tint); mask: center / contain no-repeat; -webkit-mask: center / contain no-repeat; }
+.choice-desc { font-size: 12px; letter-spacing: -0.12px; }
 
 /* Offer */
-.offer { padding: 20px; gap: 0; }
-.offer .new { color: var(--lost); font-weight: 700; font-size: 13px; margin-bottom: 12px; }
-.offer h1 { font-size: 32px; margin-bottom: 8px; }
-.offer p { font-size: 14px; margin-bottom: 20px; }
+.offer { padding: 16px; gap: 0; }
+.offer .new { color: #f48e29; font-weight: 590; font-size: 13px; letter-spacing: -0.13px; margin-bottom: 16px; }
+.offer-copy { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+.offer h1 { font-size: 32px; font-weight: 590; letter-spacing: -0.32px; }
+.offer .offer-copy p { font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 13px; font-weight: 400; letter-spacing: -0.13px; color: #a0a0a0; opacity: 1; margin: 0; }
 
 /* Buttons */
-.prominent { background: var(--tint); color: #fff; border-radius: 999px; padding: 0 20px; height: 50px; font-size: 17px; font-weight: 600; width: 100%; }
+.prominent { background: var(--tint); color: #fff; border-radius: 999px; padding: 0 20px; height: 50px; font-size: 17px; font-weight: 590; width: 100%; }
+.prominent.offer-button { background: #08f; border-radius: 1000px; padding: 7px 14px; height: auto; font-size: 15px; font-weight: 400; line-height: 20px; letter-spacing: -0.23px; }
 .prominent.black { background: #000; }
 .glass { background: rgba(120, 120, 128, 0.16); border-radius: 999px; height: 50px; width: 100%; font-size: 17px; font-weight: 500; backdrop-filter: blur(12px); }
 
+.symbol { display: inline-block; width: 1.2em; height: 1.2em; flex: none; background: currentColor; mask: center / contain no-repeat; -webkit-mask: center / contain no-repeat; }
+
 /* Game */
-.game { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.game .bar { padding-bottom: 4px; }
-.scroll { flex: 1; overflow-y: auto; padding: 8px 16px 16px; }
+.game { isolation: isolate; flex: 1; display: flex; flex-direction: column; min-height: 0; letter-spacing: -0.01em; } /* -1% tracking, as in the Figma frames */
+.game strong { font-weight: 590; }
+.game .bar h2 { font-size: 17px; font-weight: 590; } /* iOS .headline */
+.game .header { font-size: 12px; color: #a9a9a9; }
+.game .footnote { font-size: 13px; }
+.game .product-text { font-size: 14px; letter-spacing: -0.14px; gap: 4px; }
+.game .product-text .secondary { color: #afafaf; }
+.game .product-card > strong { font-size: 17px; } /* iOS .headline */
+.game .bar { padding-bottom: 0; position: relative; z-index: 2; }
+.scroll { flex: 1; overflow-y: auto; padding: 48px 16px 16px; } /* 48px between the nav bar and the body */
+.app > .bar { padding-bottom: 0; }
+.app > .bar + .choose-page { padding-top: 48px; }
 .machine { display: flex; flex-direction: column; gap: 8px; }
 .machine > .header { margin-top: 0; }
 .machine > * + .header-row, .machine > .winnings + .header-row { margin-top: 20px; }
 .controls { padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); }
 .choices { display: flex; flex-direction: column; gap: 8px; }
+/* SwiftUI .controlSize(.large) capsule buttons: 52pt tall (HIG's Large size) with the body text style, 17pt Regular unless the code sets a weight. */
+.controls .choices:not(.row-choices) button { height: 52px; font-size: 17px; font-weight: 400; }
+.controls .prominent.black { font-size: 17px; font-weight: 400; }
 
-.product-card { background: var(--card); border: 2px solid transparent; border-radius: 20px; padding: 16px; display: flex; justify-content: space-between; align-items: center; transition: border-color .4s; }
+.product-card { position: relative; z-index: 2; background: var(--card); border: 2px solid transparent; border-radius: 22px; padding: 16px; display: flex; justify-content: space-between; align-items: center; transition: border-color .4s; }
 .product-card.won { border-color: var(--won); }
 .product-card.lost { border-color: var(--lost); }
 
@@ -126,7 +193,7 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .reels { display: flex; padding: 0 10px; }
 .reel { position: relative; flex: 1; overflow: hidden; }
 .face-slot { position: absolute; inset: 0; display: grid; place-items: center; }
-.face { width: calc(100% - 16px); display: grid; place-items: center; border-radius: 999px; font-size: 22px; background: color-mix(in srgb, var(--card) calc(var(--emphasis) * 100%), transparent); }
+.face { width: calc(100% - 16px); display: grid; place-items: center; border-radius: 999px; font-size: 20px; font-weight: 500; background: color-mix(in srgb, var(--card) calc(var(--emphasis) * 100%), transparent); }
 .face.won { background: color-mix(in srgb, #c6f0d3 calc(var(--emphasis) * 100%), transparent); }
 .face.lost { background: color-mix(in srgb, var(--lost-fill) calc(var(--emphasis) * 100%), transparent); }
 .arrows { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; color: #aeaeb2; font-size: 11px; pointer-events: none; }
@@ -134,36 +201,46 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .arrows.lost { color: var(--lost); }
 
 /* Slider */
-.slider { position: relative; border-radius: 999px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); overflow: hidden; touch-action: none; user-select: none; }
+.slider { position: relative; touch-action: none; user-select: none; }
+.slider-track { position: absolute; top: 0; bottom: 0; right: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); }
 .slider-label { position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; pointer-events: none; }
 .shimmer { color: transparent; background: linear-gradient(90deg, var(--secondary) 0 35%, #000 50%, var(--secondary) 65% 100%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; animation: shimmer 2s linear infinite; }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
-.slider-knob { position: absolute; left: 0; top: 0; border-radius: 50%; background: var(--tint); color: #fff; display: grid; place-items: center; font-size: 26px; font-weight: 700; cursor: grab; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); touch-action: none; }
+.slider-knob { position: absolute; border-radius: 50%; background: var(--tint); color: #fff; display: grid; place-items: center; font-size: 22px; font-weight: 700; cursor: grab; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); touch-action: none; }
 
 /* Tier board */
 .tier { position: relative; width: 100%; }
 .tier-inner { position: absolute; left: 0; top: 0; transform-origin: top left; }
-.well { position: absolute; inset: 0; background: var(--gray5); border: 1px solid var(--gray4); border-radius: 0 0 20px 20px; overflow: hidden; }
+.well { position: absolute; inset: 0; background: var(--card); border-radius: 20px; overflow: hidden; }
+/* Once landed, the whole board is outlined in the result's colour, like the Your Product card. */
+.well::after { content: ''; position: absolute; inset: 0; z-index: 2; border: 2px solid transparent; border-radius: 20px; transition: border-color .55s cubic-bezier(0.22, 1, 0.36, 1); pointer-events: none; }
+.well.won::after { border-color: var(--won); }
+.well.lost::after { border-color: var(--lost); }
 .toggle { position: absolute; border-radius: 999px; background: #d1d1d6; transition: background .25s; }
 .toggle::after { content: ''; position: absolute; top: 1.5px; left: 1.5px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); transition: transform .25s; }
 .toggle.on { background: #34c759; }
 .toggle.on::after { transform: translateX(23px); }
-.bins { position: absolute; left: 0; right: 0; display: flex; border-top: 1px solid var(--gray4); }
-.bin { height: 100%; background: var(--card); border-left: 1px solid var(--gray4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 2px; text-align: center; font-size: 13px; line-height: 1.15; overflow: hidden; transition: background .4s; }
-.bin:first-child { border-left: 0; }
-.bin.won { background: var(--won-fill); }
-.bin.lost { background: var(--lost-fill); }
-.bin-name.narrow { display: flex; flex-direction: column; font-size: 10px; }
-.bin-odds { font-size: 11px; opacity: 0.6; }
-.ball { position: absolute; border-radius: 50%; background: #000; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.18); transition: opacity .35s, scale .35s; pointer-events: none; }
-.notch { position: absolute; left: 0; width: 100%; height: 130px; transition: opacity .2s; pointer-events: none; }
-.goo { position: absolute; inset: 0; filter: url(#goo); }
-.blob { position: absolute; background: #000; }
-.bloom { position: absolute; width: 0; height: 0; animation: breathe 3.2s ease-in-out infinite alternate; }
-.bloom-glow { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); border-radius: 50%; filter: blur(24px); }
-.bloom.won .bloom-glow { background: radial-gradient(closest-side, rgba(0, 137, 50, 0.75), rgba(0, 137, 50, 0.25) 60%, transparent); }
-.bloom.lost .bloom-glow { background: radial-gradient(closest-side, rgba(255, 149, 0, 0.75), rgba(255, 149, 0, 0.25) 60%, transparent); }
-.bloom-rim { position: absolute; left: 0; top: 0; height: 8px; transform: translate(-50%, -50%); border-radius: 999px; filter: blur(7px); }
+.bins { position: absolute; left: 0; overflow: hidden; } /* clips the landed outline's top edge */
+/* The landing is one smooth glide, like SwiftUI's .smooth(duration: 0.55): the bin widens, the rest fade. */
+.bin { position: absolute; top: 0; height: 100%; background: var(--card); display: flex; align-items: center; justify-content: center; padding: 0 4px; text-align: center; font-size: 11px; font-weight: 590; line-height: 1.1; overflow: hidden; transition: left .55s cubic-bezier(0.22, 1, 0.36, 1), width .55s cubic-bezier(0.22, 1, 0.36, 1), opacity .55s cubic-bezier(0.22, 1, 0.36, 1); }
+.bin-content { display: flex; align-items: center; justify-content: center; max-width: 100%; transition: gap .55s cubic-bezier(0.22, 1, 0.36, 1); }
+.bin-photo { flex: none; height: 38px; object-fit: contain; transition: width .55s cubic-bezier(0.22, 1, 0.36, 1), opacity .55s; }
+.bin-none { flex: none; display: grid; place-items: center; font-size: 14px; overflow: hidden; transition: width .55s cubic-bezier(0.22, 1, 0.36, 1), opacity .55s; }
+.bin-name { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; min-width: 0; transition: transform .55s cubic-bezier(0.22, 1, 0.36, 1), opacity .55s; }
+.bin-sep { position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: #d1d1d6; transition: opacity .55s; }
+.bins-outline { position: absolute; inset: -1px 0 0 0; border: 1px solid #d1d1d6; border-radius: 0 0 20px 20px; pointer-events: none; transition: opacity .55s; }
+.ball-clip { position: absolute; inset: 0; }
+.ball-track { position: absolute; left: 0; top: 0; }
+.ball { position: absolute; inset: 0; border-radius: 50%; background: #000; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.18); transition: opacity .35s; }
+.ball-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; } /* over the board, under the cards above it */
+.notch { position: absolute; left: 0; top: 0; overflow: visible; transition: opacity .2s; pointer-events: none; }
+.bloom-in { position: absolute; width: 0; height: 0; transform-origin: 0 150px; animation: bloom-in .55s cubic-bezier(0.22, 1, 0.36, 1); } /* fades in and grows from its bottom */
+@keyframes bloom-in { from { opacity: 0; transform: scale(0.8); } }
+.bloom { position: absolute; width: 0; height: 0; animation: breathe 1.6s ease-in-out infinite alternate; }
+.bloom-glow { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); border-radius: 50%; filter: blur(30px); }
+.bloom.won .bloom-glow { background: radial-gradient(circle var(--reach) at center, rgba(0, 137, 50, 0.45) 0%, rgba(0, 137, 50, 0.14) 50%, rgba(0, 137, 50, 0) 100%); }
+.bloom.lost .bloom-glow { background: radial-gradient(circle var(--reach) at center, rgba(255, 149, 0, 0.45) 0%, rgba(255, 149, 0, 0.14) 50%, rgba(255, 149, 0, 0) 100%); }
+.bloom-rim { position: absolute; left: 0; top: 0; height: 8px; transform: translate(-50%, -50%); border-radius: 999px; filter: blur(9px); opacity: 0.55; }
 .bloom.won .bloom-rim { background: var(--won); }
 .bloom.lost .bloom-rim { background: var(--lost); }
 @keyframes breathe { from { transform: scale(0.85); opacity: 0.55; } to { transform: scale(1); opacity: 1; } }
@@ -171,20 +248,25 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 /* Empty state */
 .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; }
 .empty-icon { font-size: 48px; }
+.empty h2 { font-size: 22px; font-weight: 590; } /* ContentUnavailableView title */
+.empty p { font-size: 15px; }
 .empty .prominent { width: auto; margin-top: 12px; }
 
 /* Menu */
 .menu-wrap { position: relative; }
-.menu { position: absolute; right: 0; top: 44px; z-index: 5; min-width: 200px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18); padding: 8px; display: flex; flex-direction: column; }
-.menu button { text-align: left; padding: 10px 12px; border-radius: 10px; }
+.menu { position: absolute; right: 0; top: 44px; z-index: 5; min-width: 200px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 16px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); padding: 8px; display: flex; flex-direction: column; }
+.menu button { display: flex; align-items: center; gap: 10px; text-align: left; padding: 10px 12px; border-radius: 10px; }
 .menu button:not(:disabled):hover { background: var(--gray5); }
+.menu-icon { width: 20px; height: 18px; }
 .menu-title { font-size: 12px; color: var(--secondary); padding: 4px 12px; }
 
 /* Sheets and alerts */
 .backdrop { position: absolute; inset: 0; z-index: 10; background: rgba(0, 0, 0, 0.35); display: flex; align-items: flex-end; animation: fade .25s; }
 .backdrop.center { align-items: center; justify-content: center; }
+.backdrop.light { background: rgba(0, 0, 0, 0.2); } /* how far the system dims the page behind a sheet */
 @keyframes fade { from { opacity: 0; } }
 .sheet { width: 100%; background: var(--card); border-radius: 28px 28px 0 0; animation: rise .35s cubic-bezier(.2, .9, .3, 1); max-height: 100%; overflow-y: auto; }
+.sheet.floating { width: calc(100% - 16px); margin: 0 8px 8px; border-radius: 47px; background: #fff; } /* 8pt in from the edges, concentric with the device's corners */
 .sheet.tall { height: calc(100% - 24px); background: var(--bg); }
 @keyframes rise { from { transform: translateY(100%); } }
 .alert { width: 270px; background: rgba(255, 255, 255, 0.95); border-radius: 20px; text-align: center; overflow: hidden; }
@@ -193,26 +275,51 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .alert-actions { display: flex; border-top: 1px solid var(--gray4); }
 .alert-actions button { flex: 1; padding: 14px; font-size: 17px; color: var(--tint); }
 .alert-actions button + button { border-left: 1px solid var(--gray4); }
-.alert-actions .destructive { color: #ff3b30; font-weight: 600; }
+.alert-actions .destructive { color: #ff3b30; font-weight: 590; }
 
 .summary { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
 .summary .bar { padding-left: 0; padding-right: 0; }
 
 /* Apple Pay */
-.pay { padding: 24px; outline: none; min-height: 330px; display: flex; flex-direction: column; user-select: none; }
-.pay-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.pay-word { font-size: 22px; font-weight: 600; }
+.pay { padding: 24px 24px 53px; outline: none; min-height: 349px; display: flex; flex-direction: column; user-select: none; }
+.pay-head { display: flex; justify-content: space-between; align-items: center; height: 25px; margin-bottom: 20px; } /* the close button overhangs, as on iOS */
+.pay-word { display: inline-flex; align-items: center; gap: 1px; font-size: 22px; font-weight: 590; letter-spacing: 0.3px; }
 .pay-card { display: flex; align-items: center; gap: 14px; }
 .card-art { width: 46px; height: 30px; border-radius: 5px; background: linear-gradient(135deg, #5856d6, #af52de); position: relative; }
 .card-art span { position: absolute; right: 3px; bottom: 3px; font-size: 6px; font-weight: 700; color: #fff; }
 .card-text { display: flex; flex-direction: column; flex: 1; gap: 2px; }
-.card-text span { font-size: 15px; color: var(--secondary); }
+.card-text strong { font-size: 17px; font-weight: 500; letter-spacing: -0.85px; } /* tracking calibrated to the iOS sheet's measured text widths */
+.card-text span { font-size: 15px; color: var(--secondary); letter-spacing: -0.5px; }
+.pay-chev { flex: none; color: var(--tertiary); }
+.pay-close { width: 30px; height: 30px; background: #fff; background-blend-mode: normal; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08); }
+.pay hr { border-top-width: 0.33px; border-top-color: rgba(60, 60, 67, 0.29); } /* a hairline: one device pixel */
 .pay hr { margin: 16px 0; }
-.pay-total { display: flex; justify-content: space-between; align-items: baseline; color: var(--secondary); }
-.pay-total strong { font-size: 22px; color: var(--label); }
-.pay-confirm { margin-top: auto; padding-top: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; }
-.pay-icon { font-size: 34px; line-height: 1; }
+.pay-total { display: flex; justify-content: space-between; align-items: baseline; font-size: 17px; letter-spacing: -0.87px; color: var(--secondary); }
+.pay-total strong { font-size: 22px; font-weight: 590; letter-spacing: -1.4px; color: var(--label); }
+.pay-confirm { margin-top: auto; padding-top: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 15px; letter-spacing: -0.56px; font-weight: 500; }
+.pay-icon { display: block; background: currentColor; mask: center / contain no-repeat; -webkit-mask: center / contain no-repeat; }
 .pay-icon.pulse { animation: pulse 1.2s ease-in-out infinite; }
-.pay-icon.done { color: var(--tint); animation: pop .35s cubic-bezier(.34, 1.56, .64, 1); }
+.pay-icon.done { color: var(--tint); animation: draw-on .5s cubic-bezier(0.22, 1, 0.36, 1); } /* revealed left to right, like the symbol's draw-on */
 @keyframes pulse { 50% { opacity: 0.4; } }
+@keyframes draw-on { from { clip-path: inset(0 100% 0 0); opacity: 0.4; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
 @keyframes pop { from { transform: scale(0.3); opacity: 0; } }
+
+/* Device switcher */
+.segmented { display: flex; background: rgba(120, 120, 128, 0.12); border-radius: 10px; padding: 2px; }
+.segmented button { flex: 1; padding: 7px 8px; border-radius: 8px; font-size: 14px; font-weight: 500; }
+.segmented button.selected { background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); font-weight: 590; }
+.summary-device { display: flex; flex-direction: column; gap: 12px; }
+.row-choices { flex-direction: row; }
+.row-choices button { flex: 1; height: 100%; font-weight: 590; font-size: 17px; line-height: 1.1; padding: 0 12px; }
+
+/* Face ID intro: a dark panel pinned under the status area, as on iOS. */
+.faceid { position: absolute; inset: 0; z-index: 20; background: var(--bg); display: flex; align-items: flex-start; justify-content: center; padding-top: calc(max(env(safe-area-inset-top), 59px) + 8px); transition: opacity .5s cubic-bezier(0.22, 1, 0.36, 1); }
+.faceid.leave { opacity: 0; pointer-events: none; }
+.faceid-hud { width: 168px; height: 168px; border-radius: 28px; background: #1f1f1f; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #fff; font-size: 15px; font-weight: 500; letter-spacing: -0.56px; }
+.faceid-art { position: relative; width: 100%; height: 100px; }
+.faceid-art > * { position: absolute; left: 50%; top: 50%; translate: -50% -50%; } /* both are centred on the panel, even the canvas that's wider than it */
+/* The Face ID symbol at 64 pt (0.64 of its SVG units): there from the first frame, then pulsing. */
+.faceid-glyph { width: 61.2px; height: 61.2px; background: #fff; mask: url(/icons/faceid.svg) center / contain no-repeat; -webkit-mask: url(/icons/faceid.svg) center / contain no-repeat; animation: pulse 1.2s ease-in-out infinite; transition: opacity .5s; }
+.faceid-glyph.gone { opacity: 0; animation: none; }
+.faceid-detecting { opacity: 0; transition: opacity .5s; max-width: none; }
+.faceid-detecting.shown { opacity: 1; }

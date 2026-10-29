@@ -125,7 +125,7 @@ struct GameView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
+            .padding(.top, 24)  // below the navigation bar, as on the other screens
         }
         .scrollBounceBehavior(.basedOnSize)
         .scrollDisabled(game.phase == .spinning)
@@ -178,25 +178,19 @@ struct GameView: View {
             .foregroundStyle(.secondary)
     }
 
-    /// Every upgrade but the last on the left, and the last, the AirPods, as one tall tile on the right
-    /// as tall as the left column, as in the design.
+    /// Two columns of two pills, in the order the upgrades are won: the first two on the left, then the
+    /// next two on the right, so Pro Storage sits above the AirPods.
     private func winnings(_ moment: Game.Change?) -> some View {
         let upgrades = game.device.upgrades
-        let left = upgrades.count - 1
-        let tall = Double(left) * 38 + Double(left - 1) * 8
+        let half = (upgrades.count + 1) / 2
         return HStack(alignment: .top, spacing: 8) {
-            VStack(spacing: 8) {
-                ForEach(0..<left, id: \.self) { i in
-                    capsule(upgrades[i].name, icon: upgrades[i].icon, state: state(i, moment), alignment: .leading,
-                            price: game.price(ofUpgrade: i))
-                        .frame(height: 38)
-                }
-            }
-            VStack(spacing: 8) {
-                ForEach(left..<upgrades.count, id: \.self) { i in
-                    capsule(upgrades[i].name, icon: upgrades[i].icon, state: state(i, moment), alignment: .center,
-                            price: game.price(ofUpgrade: i))
-                        .frame(height: tall)
+            ForEach([0..<half, half..<upgrades.count], id: \.self) { column in
+                VStack(spacing: 8) {
+                    ForEach(column, id: \.self) { i in
+                        capsule(upgrades[i].name, icon: upgrades[i].icon, state: state(i, moment),
+                                price: game.price(ofUpgrade: i))
+                            .frame(height: 38)
+                    }
                 }
             }
         }
@@ -211,7 +205,7 @@ struct GameView: View {
     }
 
     /// `price` shows during the moment: what was just won or lost, in the outline's colour.
-    private func capsule(_ name: String, icon: String, state: Prize, alignment: Alignment, price: Int) -> some View {
+    private func capsule(_ name: String, icon: String, state: Prize, price: Int) -> some View {
         // The price takes the icon's place for the moment: name, icon and price don't all fit in a short capsule.
         let showsPrice = state == .justWon || state == .justLost
         return HStack(spacing: 6) {
@@ -228,7 +222,7 @@ struct GameView: View {
         .minimumScaleFactor(0.8)
         .foregroundStyle(state.foreground)
         .padding(.horizontal, 16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .card(fill: state.fill, outline: state.outline)
         .symbolEffect(.bounce, value: state == .justWon)
         .accessibilityElement(children: .combine)
@@ -418,4 +412,20 @@ struct ProductRow: View {
             .font(.subheadline)
         }
     }
+}
+
+#Preview("Features: winnings") {
+    let game = Game(device: Catalog.devices[0])
+    game.play(.features)
+    return NavigationStack { GameView() }
+        .environment(game)
+        .frame(width: 402, height: 660)  // an iPhone 17 Pro's width; shorter than the phone so the canvas doesn't crop the top
+}
+
+#Preview("Features: winnings, iPhone") {
+    let game = Game(device: Catalog.devices[1])
+    game.play(.features)
+    return NavigationStack { GameView() }
+        .environment(game)
+        .frame(width: 402, height: 660)
 }
