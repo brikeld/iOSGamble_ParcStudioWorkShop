@@ -1,0 +1,10 @@
+// Shared build settings (committed).
+// Per-developer settings live in Local.xcconfig, which is git-ignored.
+// Copy Local.xcconfig.example to Local.xcconfig and fill in your values.
+
+// Default bundle ID prefix. Override it in Local.xcconfig so each developer
+// gets a unique ID that their own team can register.
+BUNDLE_ID_PREFIX = com.ichance
+
+// Must stay last so Local.xcconfig can override the defaults above.
+#include? "Local.xcconfig"
