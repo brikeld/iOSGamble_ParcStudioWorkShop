@@ -1,0 +1,8 @@
+// Copy this file to Local.xcconfig (git-ignored) and fill in your values.
+
+// Your Apple team ID: Xcode > Settings > Accounts, or developer.apple.com > Membership.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+
+// A bundle ID prefix your team can register. Must be unique across Apple.
+// Example: com.ichance.yourname
+BUNDLE_ID_PREFIX = com.ichance.yourname
