@@ -228,17 +228,22 @@ struct TierBoard: View {
             .animation(.smooth(duration: 0.55), value: landed)
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(.rect(cornerRadius: 20))
+            // Once landed, the whole board is outlined in the result's colour, like the Your Product card.
+            .overlay {
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder((landed != nil ? outcome?.color : nil) ?? .clear, lineWidth: 2)
+                    .animation(.smooth(duration: 0.55), value: landed)
+            }
         }
         .aspectRatio(Board.size, contentMode: .fit)
         .allowsHitTesting(false)
         .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { drop.boardFrame = $0 }
     }
 
-    /// A grey bin flush with its neighbours and the card's edges, with the product's name. The landed one opens up
-    /// its photo beside the name and is outlined like the Your Product card. Black text throughout.
+    /// A bin in the board's own white, flush with its neighbours and the card's edges, with the product's name. The landed one opens up
+    /// its photo beside the name. Black text throughout.
     /// `width` is the bin's resting width, so its layout never swaps mid-animation: everything here only grows or fades.
     private func bin(_ i: Int, width: Double, scale s: Double) -> some View {
-        let hit = landed == i ? outcome : nil
         let expanded = landed == i
         let name = bins[i]?.name ?? "Nothing"
         let iconOnly = width < 46 && !expanded  // too narrow for "Nothing"
@@ -268,14 +273,7 @@ struct TierBoard: View {
         }
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGray6))
-        // Always there, so they change colour and fade rather than pop in. Sides and bottom only: the top edge
-        // sits above the bin and is clipped off.
-        .overlay {
-            UnevenRoundedRectangle(bottomLeadingRadius: 20, bottomTrailingRadius: 20, style: .continuous)
-                .strokeBorder(hit?.color ?? .clear, lineWidth: 2)
-                .padding(.top, -2)
-        }
+        .background(Color(.secondarySystemGroupedBackground))  // the board's own fill, so the bins read as part of it
         .overlay(alignment: .leading) {
             if i > 0 { Rectangle().fill(Color(.systemGray4)).frame(width: 1).opacity(landed == nil ? 1 : 0) }
         }

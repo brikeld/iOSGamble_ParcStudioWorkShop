@@ -116,6 +116,7 @@ private struct DeviceResult: View {
                 chip(Text(profitText(change.delta)), outcome: Change(delta: change.delta).outcome)
             }
             .padding(.leading, 37)  // the line sits under the middle of the photo
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
             if game.phase == .nothing {
                 row(symbol: "shippingbox", title: "Nothing", subtitle: "Won’t be delivered") { EmptyView() }

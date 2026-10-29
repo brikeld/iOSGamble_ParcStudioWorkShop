@@ -14,6 +14,7 @@ struct ChooseGameView: View {
                         .font(.largeTitle.bold())
                     Text("Try your luck at upgrading your \(game.device.kind)’s technical configuration, or swap your product for another league altogether.")
                         .font(.footnote)
+                        .foregroundStyle(.secondary)  // as the offer's subtitle on the order screen
                 }
                 .padding(.vertical, 8)
                 .environment(\.colorScheme, .dark)
