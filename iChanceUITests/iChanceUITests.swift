@@ -33,7 +33,9 @@ final class iChanceUITests: XCTestCase {
         XCTAssert(slider.waitForExistence(timeout: 5))
         slider.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
             .press(forDuration: 0.1, thenDragTo: slider.coordinate(withNormalizedOffset: CGVector(dx: 1.0, dy: 0.5)))
-        XCTAssert(app.buttons["keep"].waitForExistence(timeout: 15), "the ball must land and offer a choice")
+        let nothing = app.buttons["View Summary"]
+        XCTAssert(app.buttons["keep"].waitForExistence(timeout: 15) || nothing.exists, "the ball must land and offer a choice")
+        guard !nothing.exists else { return }  // landed on Nothing: the game is over
         sleep(1)
         let anotherTry = app.buttons["anotherTry"]
         guard anotherTry.exists else {

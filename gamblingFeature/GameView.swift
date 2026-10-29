@@ -14,7 +14,7 @@ struct GameView: View {
                 ContentUnavailableView {
                     Label("You’ll receive nothing.", systemImage: "shippingbox")
                 } description: {
-                    Text("You paid \(game.totalPaid.dollars). Nothing will be delivered.")
+                    Text("You paid \(game.totalPaid.dollars). Your \(game.device.kind) won’t be delivered.")
                 } actions: {
                     Button("View Summary") { game.showsSummary = true }
                         .buttonStyle(.glassProminent)
@@ -60,8 +60,9 @@ struct GameView: View {
     /// A plain stack, not a List: List rows clip the capsules' strokes and squeeze their icons.
     private var machine: some View {
         let moment = game.isMoment ? game.change : nil
-        // An iPad below the one you ordered is outlined orange, above it green; the card itself stays white.
-        let iPad: Outcome? = game.productIndex < Catalog.startProduct ? .lost : game.productIndex > Catalog.startProduct ? .won : nil
+        // A product below the one you ordered is outlined orange, above it green; the card itself stays white.
+        let start = game.device.start
+        let tier: Outcome? = game.productIndex < start ? .lost : game.productIndex > start ? .won : nil
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 32) {
@@ -82,7 +83,7 @@ struct GameView: View {
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .card(fill: Color(.secondarySystemGroupedBackground), outline: iPad?.color, lineWidth: 2)
+                    .card(fill: Color(.secondarySystemGroupedBackground), outline: tier?.color, lineWidth: 2)
                 }
 
                 if game.mode == .features {
@@ -107,10 +108,20 @@ struct GameView: View {
                         slot
                     }
                 } else {
-                    // Landing on the iPad you already have shows no colour: nothing gained, nothing lost.
-                    TierBoard(bins: game.bins.map { $0.map { Catalog.products[$0].name } ?? "Nothing" }, odds: game.odds, landed: game.landedBin,
-                              outcome: game.change?.iPad == 0 ? nil : game.phase == .won ? .won : game.phase == .lost ? .lost : nil,
-                              drop: drop)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            header("Board")
+                            Spacer()
+                            Text(game.drops == 0 ? "First drop free" : game.drops == 1 ? "1 drop" : "\(game.drops) drops")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .contentTransition(.numericText(value: Double(game.drops)))
+                        }
+                        // Landing on the product you already have shows no colour: nothing gained, nothing lost.
+                        TierBoard(bins: game.bins.map { $0.map { game.device.products[$0] } }, odds: game.odds, landed: game.landedBin,
+                                  outcome: game.change?.iPad == 0 ? nil : game.phase == .won ? .won : game.phase == .lost ? .lost : nil,
+                                  flashesPhoto: game.isMoment, drop: drop)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -167,21 +178,25 @@ struct GameView: View {
             .foregroundStyle(.secondary)
     }
 
-    /// The first three upgrades on the left, the two bigger ones on the right, as in the design.
+    /// Every upgrade but the last on the left, and the last, the AirPods, as one tall tile on the right
+    /// as tall as the left column, as in the design.
     private func winnings(_ moment: Game.Change?) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        let upgrades = game.device.upgrades
+        let left = upgrades.count - 1
+        let tall = Double(left) * 38 + Double(left - 1) * 8
+        return HStack(alignment: .top, spacing: 8) {
             VStack(spacing: 8) {
-                ForEach(0..<3) { i in
-                    capsule(Catalog.upgrades[i].name, icon: Catalog.upgrades[i].icon, state: state(i, moment), alignment: .leading,
+                ForEach(0..<left, id: \.self) { i in
+                    capsule(upgrades[i].name, icon: upgrades[i].icon, state: state(i, moment), alignment: .leading,
                             price: game.price(ofUpgrade: i))
                         .frame(height: 38)
                 }
             }
             VStack(spacing: 8) {
-                ForEach(3..<5) { i in
-                    capsule(Catalog.upgrades[i].name, icon: Catalog.upgrades[i].icon, state: state(i, moment), alignment: .center,
+                ForEach(left..<upgrades.count, id: \.self) { i in
+                    capsule(upgrades[i].name, icon: upgrades[i].icon, state: state(i, moment), alignment: .center,
                             price: game.price(ofUpgrade: i))
-                        .frame(height: 61)
+                        .frame(height: tall)
                 }
             }
         }
@@ -224,29 +239,33 @@ struct GameView: View {
     @ViewBuilder private var tierControls: some View {
         // Also when a drop is owed: coming back from Features after a drop, the next one must be paid for first.
         if !game.isMoment && (game.phase == .won || game.phase == .lost || (game.phase == .idle && game.needsDropPayment)) {
-            VStack(spacing: 8) {
-                // On the best iPad another drop can only go down; offer to win its features instead.
+            // Side by side, in the slider's height, so the board above never has to make room.
+            HStack(spacing: 8) {
+                Button { game.showsSummary = true } label: {
+                    Text("Take winnings").frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .buttonStyle(.glass)
+                .accessibilityIdentifier("keep")
+                // On the best product another drop can only go down; offer to win its features instead.
                 if game.hasBestTierProduct && game.canPlay(.features) {
                     Button { withAnimation { game.play(.features) } } label: {
-                        Label("Gamble for features", systemImage: "gauge.with.dots.needle.67percent").frame(maxWidth: .infinity)
+                        Text("Gamble for features").frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .buttonStyle(.glassProminent)
                     .accessibilityIdentifier("gambleFeatures")
                 } else {
                     Button { paysForDrop = true } label: {
-                        Text("\(game.dropPrice.dollars) for another try").frame(maxWidth: .infinity)
+                        Text("\(game.dropPrice.dollars) for another try").frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .buttonStyle(.glassProminent)
                     .accessibilityIdentifier("anotherTry")
                 }
-                Button { game.showsSummary = true } label: {
-                    Text("Take winnings").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.glass)
-                .accessibilityIdentifier("keep")
             }
+            .fontWeight(.semibold)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
             .controlSize(.large)
-            .padding(.bottom, -8)
+            .frame(height: SlideToSpin.height)
             .transition(.blurReplace)
             .sheet(isPresented: $paysForDrop) {
                 ApplePaySheet(amount: game.dropPrice) { withAnimation { game.payForDrop() } }
@@ -310,7 +329,7 @@ struct GameView: View {
                 Button("Spin", role: .destructive) { Task { await game.pull(power: 0.5) } }
                 Button("Cancel", role: .cancel) { game.nudge(0) }
             } message: {
-                Text("This is your last iPad. If you lose this spin, you lose everything: you paid \(game.totalPaid.dollars) and nothing will be delivered.")
+                Text("This is your last \(game.device.kind). If you lose this spin, you lose it: you paid \(game.totalPaid.dollars) and no \(game.device.kind) will be delivered.")
             }
         }
     }
@@ -379,7 +398,7 @@ private extension View {
     }
 }
 
-/// The iPad you'll receive: picture, name, configuration.
+/// The product you'll receive: picture, name, configuration.
 struct ProductRow: View {
     let product: Product
     let configuration: String

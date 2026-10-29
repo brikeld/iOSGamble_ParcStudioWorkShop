@@ -4,7 +4,6 @@ import SwiftUI
 struct OrderView: View {
     var onTry: () -> Void
 
-    private let product = Catalog.products[Catalog.startProduct]
 
     var body: some View {
         List {
@@ -35,23 +34,26 @@ struct OrderView: View {
             }
 
             Section {
-                HStack(spacing: 32) {
-                    Image(product.image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 66, height: 66)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(product.name)
-                            .fontWeight(.semibold)
-                        Text(product.describe(product.storage[0]))
-                        Text("Paid · Delivers \(Date.now.addingTimeInterval(2 * 86_400).formatted(.dateTime.weekday().day().month()))")
-                        Divider()
-                        LabeledContent("Qty: 1", value: Catalog.paid.dollars)
-                            .foregroundStyle(.primary)
+                ForEach(Catalog.devices, id: \.self) { device in
+                    let product = device.products[device.start]
+                    HStack(spacing: 32) {
+                        Image(product.image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 66, height: 66)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(product.name)
+                                .fontWeight(.semibold)
+                            Text(product.describe(product.storage[0]))
+                            Text("Paid · Delivers \(Date.now.addingTimeInterval(2 * 86_400).formatted(.dateTime.weekday().day().month()))")
+                            Divider()
+                            LabeledContent("Qty: 1", value: device.paid.dollars)
+                                .foregroundStyle(.primary)
+                        }
+                        .font(.footnote)
                     }
-                    .font(.footnote)
+                    .padding(.vertical, 8)
                 }
-                .padding(.vertical, 8)
             }
 
             Section {
@@ -73,7 +75,7 @@ struct OrderView: View {
                 .font(.footnote.bold())
                 .foregroundStyle(.orange)
                 .padding(.bottom, 12)
-            Text("Upgrade your iPad Air for free!")
+            Text("Upgrade your iPad or iPhone for free!")
                 .font(.system(size: 32, weight: .bold))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 8)

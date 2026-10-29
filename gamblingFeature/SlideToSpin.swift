@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The "slide to power off" control: drag the knob all the way right, or flick it, to spin.
+/// The "slide to answer" control: drag the knob all the way right, or flick it, to spin. As on the call screen,
+/// the track's left end follows the knob, and the label stays put while the knob slides over it.
 struct SlideToSpin: View {
     var label: String
     /// How far the knob is, 0…1, so the reels can follow it.
@@ -12,19 +13,25 @@ struct SlideToSpin: View {
     @State private var offset = 0.0
     @State private var fired = false
 
-    /// The knob fills the track's height, as in the design.
-    static let height = 58.0
-    private let knob = 58.0
-    private let inset = 0.0
+    /// The knob sits just inside the track, concentric with its rounded ends, like "slide to power off".
+    static let height = 66.0
+    private let inset = 4.0
+    private var knob: Double { Self.height - inset * 2 }
 
     var body: some View {
         GeometryReader { geometry in
             let travel = geometry.size.width - knob - inset * 2
+            let track = geometry.size.width - offset
             ZStack(alignment: .leading) {
+                Color.clear
+                    .frame(width: track)
+                    .glassEffect(in: .capsule)
+                    .offset(x: offset)
+                // Cut off from the knob's middle, so none of it shows in the gap between the knob and the track's end.
                 ShimmerText(text: label)
                     .frame(maxWidth: .infinity)
-                    .padding(.leading, knob)
-                    .opacity(1 - offset / travel * 2)
+                    .padding(.leading, knob + inset)
+                    .mask(alignment: .trailing) { Rectangle().frame(width: max(geometry.size.width - offset - inset - knob / 2, 0)) }
                 Image(systemName: "arrow.right")
                     .font(.title2.bold())
                     .foregroundStyle(.white)
@@ -41,7 +48,7 @@ struct SlideToSpin: View {
                                 onDrag(offset / travel)
                                 if offset == travel {
                                     fire(drag.velocity.width)
-                                    withAnimation(.bouncy) { offset = 0 }
+                                    withAnimation(.smooth(duration: 0.35)) { offset = 0 }
                                 }
                             }
                             .onEnded { drag in
@@ -52,10 +59,10 @@ struct SlideToSpin: View {
                                     let glide = min(max((travel - offset) / max(drag.velocity.width, 1), 0.08), 0.3)
                                     fire(drag.velocity.width)
                                     withAnimation(.easeOut(duration: glide)) { offset = travel } completion: {
-                                        withAnimation(.bouncy) { offset = 0 }
+                                        withAnimation(.smooth(duration: 0.35)) { offset = 0 }
                                     }
                                 } else {
-                                    withAnimation(.bouncy) {
+                                    withAnimation(.smooth(duration: 0.35)) {
                                         onDrag(0)
                                         offset = 0
                                     }
@@ -65,7 +72,6 @@ struct SlideToSpin: View {
             }
         }
         .frame(height: Self.height)
-        .glassEffect(in: .capsule)
         .opacity(isEnabled ? 1 : 0.4)
         // Disabling the slider mid-swipe cancels the drag without calling onEnded, which would leave it stuck.
         .onChange(of: isEnabled) {

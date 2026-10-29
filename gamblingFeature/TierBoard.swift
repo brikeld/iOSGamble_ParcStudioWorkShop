@@ -2,20 +2,24 @@ import SwiftUI
 
 /// The Products board, in points of the Figma frame (370 wide); drawn scaled to the screen's width.
 /// Rows are spaced further apart than in the frame, so the board fills the screen down to the slider.
+/// shortcut: the height is tuned to fill a 6.3″ iPhone (402×874 pt); smaller ones scroll, larger ones leave a gap.
 enum Board {
-    static let size = CGSize(width: 370, height: 434)
+    static let size = CGSize(width: 370, height: 467)
     /// Five rows of toggles, alternating four and five, like the design.
     static let toggles: [CGRect] = [
-        (24.0, [57.0, 129, 201, 273]), (96, [21, 93, 165, 237, 309]), (168, [57, 129, 201, 273]),
-        (240, [21, 93, 165, 237, 309]), (312, [57, 129, 201, 273]),
+        (24.0, [57.0, 129, 201, 273]), (102, [21, 93, 165, 237, 309]), (180, [57, 129, 201, 273]),
+        (258, [21, 93, 165, 237, 309]), (336, [57, 129, 201, 273]),
     ].flatMap { row in row.1.map { CGRect(x: $0, y: row.0, width: 40, height: 17) } }
-    static let binTop = 370.0
-    static let binHeight = 64.0
+    /// The bins are capsules along the bottom: 42 tall, 12 above the card's edge, 60 below the last toggles.
+    static let binTop = 413.0
+    static let binHeight = size.height - binTop
     static let ballRadius = 11.0
 
-    /// The bins' edges across the board, from 0 to its width: each bin as wide as its chance.
+    /// The bins' edges across the board, from 0 to its width. Each bin grows with its chance from a floor,
+    /// so the long shots still fit a name; the odds themselves are drawn elsewhere.
     static func edges(_ odds: [Double]) -> [Double] {
-        odds.reduce(into: [0]) { $0.append($0.last! + $1 * size.width) }
+        let floor = 30.0, spare = size.width - floor * Double(odds.count)
+        return odds.reduce(into: [0]) { $0.append($0.last! + floor + $1 * spare) }
     }
 
     /// A toggle as the ball sees it: a capsule, i.e. a segment with a radius.
@@ -56,7 +60,7 @@ enum Plinko {
     /// One path, or nil if the ball got stuck and never reached the bins in time.
     private static func simulate(from start: CGPoint, edges: [Double]) -> Run? {
         let r = Board.ballRadius, width = Board.size.width
-        let pegs = Board.toggles.map(Board.capsule)
+        let pegs = Board.toggles.map { Board.capsule($0) }
         var p = start
         var v = CGVector(dx: .random(in: -45...45), dy: 0)
         var points: [CGPoint] = [], hits: [Hit] = []
@@ -80,7 +84,7 @@ enum Plinko {
                 _ = collide(&p, &v, CGPoint(x: x, y: Board.binTop), CGPoint(x: x, y: Board.size.height), radius: 0.5)
             }
             points.append(p)
-            if p.y > Board.binTop + Board.binHeight / 2 {
+            if p.y > Board.binTop + 21 {  // swallowed halfway into the capsule
                 return Run(points: points, hits: hits, bin: max((edges.dropFirst().firstIndex { p.x < $0 } ?? edges.count - 1) - 1, 0))
             }
         }
@@ -165,13 +169,16 @@ enum Plinko {
     }
 }
 
-/// The toggles over a grey well, and the iPads underneath, each box as wide as its chance. The bin the ball
-/// fell in takes the outcome's colour, and its light rises up the board.
+/// The toggles on a card, and the products in capsules along its bottom, each wider the likelier it is.
+/// The capsule the ball fell in takes the outcome's colour, and its light rises up the board.
 struct TierBoard: View {
-    var bins: [String]
+    /// nil is Nothing.
+    var bins: [Product?]
     var odds: [Double]
     var landed: Int?
     var outcome: Outcome?
+    /// The moment right after landing: the landed capsule shows its product's photo instead of the name.
+    var flashesPhoto: Bool
     var drop: Drop
 
     @State private var toggleWidth = 64.0
@@ -180,79 +187,67 @@ struct TierBoard: View {
         GeometryReader { geometry in
             let s = geometry.size.width / Board.size.width
             let edges = Board.edges(odds)
-            let shape = UnevenRoundedRectangle(bottomLeadingRadius: 20, bottomTrailingRadius: 20, style: .continuous)
             ZStack(alignment: .topLeading) {
-                ZStack(alignment: .topLeading) {
-                    Color(.systemGray5)
-                    if let landed, let outcome {
-                        Bloom(color: outcome.color, width: (edges[landed + 1] - edges[landed]) * s, scale: s)
-                            .position(x: (edges[landed] + edges[landed + 1]) / 2 * s, y: Board.binTop * s)
-                            .transition(.scale(scale: 0.3, anchor: .bottom).combined(with: .opacity))
-                    }
-                    ForEach(Board.toggles.indices, id: \.self) { i in
-                        // The real switch, shrunk to the design's 40 pt.
-                        Toggle("", isOn: .constant(drop.toggles[i]))
-                            .labelsHidden()
-                            .fixedSize()
-                            .onGeometryChange(for: Double.self, of: { $0.size.width }) { toggleWidth = $0 }
-                            .scaleEffect(Board.toggles[i].width * s / toggleWidth)
-                            .position(x: Board.toggles[i].midX * s, y: Board.toggles[i].midY * s)
-                    }
-                    bins(s: s)
-                        .frame(height: Board.binHeight * s)
-                        .offset(y: Board.binTop * s)
+                if let landed, let outcome {
+                    Bloom(color: outcome.color, width: (edges[landed + 1] - edges[landed]) * s, scale: s)
+                        .position(x: (edges[landed] + edges[landed + 1]) / 2 * s, y: Board.binTop * s)
+                        .transition(.scale(scale: 0.3, anchor: .bottom).combined(with: .opacity))
                 }
-                .clipShape(shape)
-                .overlay { shape.stroke(Color(.systemGray4), lineWidth: 1) }
+                ForEach(Board.toggles.indices, id: \.self) { i in
+                    // The real switch, shrunk to the design's 40 pt.
+                    Toggle("", isOn: .constant(drop.toggles[i]))
+                        .labelsHidden()
+                        .fixedSize()
+                        .onGeometryChange(for: Double.self, of: { $0.size.width }) { toggleWidth = $0 }
+                        .scaleEffect(Board.toggles[i].width * s / toggleWidth)
+                        .position(x: Board.toggles[i].midX * s, y: Board.toggles[i].midY * s)
+                }
+                HStack(spacing: 0) {
+                    ForEach(bins.indices, id: \.self) { i in
+                        bin(i, width: edges[i + 1] - edges[i]).frame(width: (edges[i + 1] - edges[i]) * s)
+                    }
+                }
+                .frame(height: Board.binHeight * s)
+                .offset(y: Board.binTop * s)
             }
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(.rect(cornerRadius: 20))
         }
         .aspectRatio(Board.size, contentMode: .fit)
         .allowsHitTesting(false)
         .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { drop.boardFrame = $0 }
     }
 
-    private func bins(s: Double) -> some View {
-        HStack(spacing: 0) {
-            ForEach(bins.indices, id: \.self) { i in
-                let hit = landed == i ? outcome : nil
-                // The long shots are narrow boxes: there each word gets its own line and shrinks to fit,
-                // rather than breaking mid-word.
-                let narrow = odds[i] * Board.size.width < 70
-                VStack(spacing: 2) {
-                    if narrow {
-                        // One single-line Text per word: a Text allowed to wrap hyphenates ("Noth-ing") before it shrinks.
-                        VStack(spacing: 0) {
-                            ForEach(bins[i].split(separator: " ").map(String.init), id: \.self) { word in
-                                Text(word).lineLimit(1).minimumScaleFactor(0.4)
-                            }
-                        }
-                        .font(.footnote)
-                    } else {
-                        Text(bins[i])
-                            .font(.footnote)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.5)
+    /// A grey capsule with the product's name. Black text, also on the tint.
+    private func bin(_ i: Int, width: Double) -> some View {
+        let hit = landed == i ? outcome : nil
+        let name = bins[i]?.name ?? "Nothing"
+        return Group {
+            if let product = bins[i], hit != nil, flashesPhoto {
+                Image(product.image).resizable().scaledToFit().padding(.vertical, 6)
+            } else if width < 46 {
+                Image(systemName: "nosign").font(.subheadline).foregroundStyle(.secondary)  // too narrow for "Nothing"
+            } else if width < 60 {
+                // One single-line Text per word: a Text allowed to wrap hyphenates ("Noth-ing") before it shrinks.
+                VStack(spacing: 0) {
+                    ForEach(name.split(separator: " ").map(String.init), id: \.self) { word in
+                        Text(word).lineLimit(1).minimumScaleFactor(0.6)
                     }
-                    Text(odds[i].formatted(.percent.precision(.fractionLength(0))))
-                        .font(.caption2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .opacity(0.6)
                 }
-                .foregroundStyle(.primary)  // black on the tint too, so it stays readable
-                .padding(.horizontal, 2)
-                .frame(width: odds[i] * Board.size.width * s)
-                .frame(maxHeight: .infinity)
-                .background(hit?.fill ?? Color(.secondarySystemGroupedBackground))
-                    .overlay(alignment: .leading) {
-                        if i > 0 { Rectangle().fill(Color(.systemGray4)).frame(width: 1) }
-                    }
+            } else {
+                Text(name).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
             }
         }
-        .overlay(alignment: .top) { Rectangle().fill(Color(.systemGray4)).frame(height: 1) }
+        .font(.caption.weight(.semibold))
+        .transition(.blurReplace)
+        .padding(.horizontal, 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(hit?.fill ?? Color(.systemGray6), in: .capsule)
+        .padding(.horizontal, 3)
+        .padding(.bottom, 12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(name)
     }
-
 }
 
 /// The light out of the bin the ball fell in: a soft bloom spreading up the board from a bright rim,

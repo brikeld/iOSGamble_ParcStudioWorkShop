@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "iphone-18-pro.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
