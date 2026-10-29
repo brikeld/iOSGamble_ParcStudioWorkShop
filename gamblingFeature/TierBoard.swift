@@ -126,6 +126,8 @@ enum Plinko {
     private(set) var run: Plinko.Run?
     private(set) var started = Date.now
     private(set) var eaten = false
+    /// The bin giving way under the ball for a moment, like a key taking a press.
+    private(set) var pressed: Int?
 
     var scale: Double { boardFrame.width / Board.size.width }
 
@@ -133,6 +135,7 @@ enum Plinko {
         toggles = toggles.map { _ in false }
         run = nil
         eaten = false
+        pressed = nil
     }
 
     /// Releases the ball from the notch and plays its fall into `bin`: toggles flip, click and tap as it hits them.
@@ -156,8 +159,12 @@ enum Plinko {
             Ticker.bounce(offToggle: !wasOn, strength: hit.speed / 500)
         }
         try? await clock.sleep(until: t0 + .seconds(run.duration))
-        withAnimation(.spring(duration: 0.35, bounce: 0.2)) { eaten = true }  // swallowed by the bin
-        try? await Task.sleep(for: .seconds(0.25))
+        // The ball fades into the bin, which dips a little and springs back before it grows.
+        withAnimation(.easeOut(duration: 0.22)) { eaten = true }
+        withAnimation(.easeOut(duration: 0.12)) { pressed = run.bin }
+        try? await Task.sleep(for: .seconds(0.12))
+        withAnimation(.spring(duration: 0.35, bounce: 0.35)) { pressed = nil }
+        try? await Task.sleep(for: .seconds(0.13))
         return run.bin
     }
 
@@ -208,7 +215,7 @@ struct TierBoard: View {
                         let expanded = landed == i
                         bin(i, width: edges[i + 1] - edges[i], scale: s)
                             .frame(width: (expanded ? Board.size.width : edges[i + 1] - edges[i]) * s, height: Board.binHeight * s)
-                            .offset(x: (expanded ? 0 : edges[i]) * s)
+                            .offset(x: (expanded ? 0 : edges[i]) * s, y: drop.pressed == i ? 2.5 * s : 0)
                             .opacity(landed == nil || expanded ? 1 : 0)
                             .zIndex(expanded ? 1 : 0)
                     }
@@ -328,7 +335,7 @@ struct BallLayer: View {
                                 .glassEffect(.regular.tint(.black), in: .circle)
                                 .shadow(color: .black.opacity(0.18), radius: 3, y: 2)
                                 .frame(width: Board.ballRadius * 2 * drop.scale, height: Board.ballRadius * 2 * drop.scale)
-                                .scaleEffect(drop.eaten ? 0.05 : 1)
+                                .scaleEffect(drop.eaten ? 0.7 : 1)
                                 .opacity(drop.eaten ? 0 : 1)
                                 .position(x: p.x - origin.x, y: p.y - origin.y)
                         }

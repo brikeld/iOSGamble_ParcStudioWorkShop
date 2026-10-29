@@ -70,7 +70,11 @@ final class iChanceUITests: XCTestCase {
         }
 
         let pay = app.buttons["payForSpins"]
-        XCTAssert(pay.waitForExistence(timeout: 5), "after 4 spins, more must be paid for")
+        guard pay.waitForExistence(timeout: 5) else {
+            // All four spins won (1 in 16): every accessory is held, Features is over and play moved on to Products.
+            XCTAssert(app.staticTexts["Products"].exists, "after 4 spins, more must be paid for")
+            return
+        }
         pay.tap()
         let sheet = app.staticTexts["Double-Tap to Pay"]
         XCTAssert(sheet.waitForExistence(timeout: 5))
