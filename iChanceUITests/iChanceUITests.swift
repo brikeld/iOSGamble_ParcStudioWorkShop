@@ -59,14 +59,14 @@ final class iChanceUITests: XCTestCase {
         XCTAssert(app.buttons["Swipe to win"].waitForExistence(timeout: 10), "paying must allow another drop")
     }
 
-    /// Every 4 spins the slider gives way to the Apple Pay button; paying brings it back.
+    /// Every 3 spins the slider gives way to the Apple Pay button; paying brings it back.
     func testPayForMoreSpins() throws {
         let app = XCUIApplication()
         app.launch()
         openIChance(app)
         app.staticTexts["Features"].tap()
 
-        for _ in 0..<4 {
+        for _ in 0..<3 {
             let slider = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Swipe to win'")).firstMatch
             XCTAssert(slider.waitForExistence(timeout: 5))
             slider.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
@@ -77,11 +77,7 @@ final class iChanceUITests: XCTestCase {
         }
 
         let pay = app.buttons["payForSpins"]
-        guard pay.waitForExistence(timeout: 5) else {
-            // All four spins won (1 in 16): every accessory is held, Features is over and play moved on to Products.
-            XCTAssert(app.staticTexts["Products"].exists, "after 4 spins, more must be paid for")
-            return
-        }
+        XCTAssert(pay.waitForExistence(timeout: 5), "after 3 spins, more must be paid for")
         pay.tap()
         let sheet = app.staticTexts["Double-Tap to Pay"]
         XCTAssert(sheet.waitForExistence(timeout: 5))

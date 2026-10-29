@@ -4,6 +4,9 @@ import Foundation
 enum Odds {
     /// Every pull is a fair coin flip.
     static let winChance = 0.5
+    /// For the demo, a device's first pulls are scripted: the 3 free spins win, the first one after paying loses.
+    /// Every pull after these is the fair coin flip again.
+    static let demoScript = [true, true, true, false]
     /// Share of losses where only the last reel misses, by one row.
     static let nearMissShare = 0.8
 

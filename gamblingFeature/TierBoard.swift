@@ -1,17 +1,17 @@
 import SwiftUI
 
 /// The Products board, in points of the Figma frame (370 wide); drawn scaled to the screen's width.
-/// Rows are spaced further apart than in the frame, so the board fills the screen down to the slider.
+/// Rows are spaced a little further apart than in the frame, leaving room below the board for the slider.
 /// shortcut: the height is tuned to fill a 6.3″ iPhone (402×874 pt); smaller ones scroll, larger ones leave a gap.
 enum Board {
-    static let size = CGSize(width: 370, height: 467)
+    static let size = CGSize(width: 370, height: 431)
     /// Five rows of toggles, alternating four and five, like the design.
     static let toggles: [CGRect] = [
-        (24.0, [57.0, 129, 201, 273]), (102, [21, 93, 165, 237, 309]), (180, [57, 129, 201, 273]),
-        (258, [21, 93, 165, 237, 309]), (336, [57, 129, 201, 273]),
+        (24.0, [57.0, 129, 201, 273]), (94, [21, 93, 165, 237, 309]), (164, [57, 129, 201, 273]),
+        (234, [21, 93, 165, 237, 309]), (304, [57, 129, 201, 273]),
     ].flatMap { row in row.1.map { CGRect(x: $0, y: row.0, width: 40, height: 17) } }
-    /// The bins run flush along the card's bottom, 54 tall, 60 below the last toggles.
-    static let binTop = 413.0
+    /// The bins run flush along the card's bottom, 54 tall, 56 below the last toggles.
+    static let binTop = 377.0
     static let binHeight = size.height - binTop
     static let ballRadius = 11.0
 

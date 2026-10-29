@@ -55,7 +55,7 @@ enum Catalog {
     private static let airPods = Upgrade(name: "AirPods Pro 4", icon: "airpods.gen4.chargingcase.wireless", price: 249, image: "airpods-pro")
 
     /// Every this many pulls, more spins have to be bought.
-    static let spinsPerPayment = 4
+    static let spinsPerPayment = 3
     static let spinPrice = 50
     /// Products: the first drop is free, then 50, 100, 150…
     static let dropPriceStep = 50

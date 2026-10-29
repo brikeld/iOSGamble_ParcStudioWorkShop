@@ -9,6 +9,9 @@ struct SummaryView: View {
     /// Ends the session.
     var onDone: () -> Void
 
+    /// The money card shows only the profit or loss until it's tapped open.
+    @State private var showsDetails = false
+
     var body: some View {
         let paid = games.reduce(0) { $0 + $1.device.paid }
         let fees = games.reduce(0) { $0 + $1.fees }
@@ -21,22 +24,47 @@ struct SummaryView: View {
                         header("Your \(game.device.kind)")
                         DeviceResult(game: game)
                     }
-                    header("Total")
                     VStack(spacing: 0) {
-                        total("Paid", paid.dollars)
-                        if fees > 0 {
-                            Divider().padding(.leading, 16)
-                            total("Extra spins", fees.dollars)
+                        Button {
+                            withAnimation(.smooth(duration: 0.35)) { showsDetails.toggle() }
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(profit > 0 ? "Profit" : profit < 0 ? "Loss" : "Break Even")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Text(profitText(profit))
+                                    .foregroundStyle(Change(delta: profit).color)
+                                    .monospacedDigit()
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .rotationEffect(.degrees(showsDetails ? 90 : 0))
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .contentShape(.rect)
                         }
-                        Divider().padding(.leading, 16)
-                        total("Value", value.dollars)
-                        Divider().padding(.leading, 16)
-                        total("Profit or Loss", profitText(profit), color: Change(delta: profit).color)
-                        Divider().padding(.leading, 16)
-                        // Slot spins and ball drops, on both devices.
-                        total("Bets", games.reduce(0) { $0 + $1.spins + $1.drops }.formatted())
+                        .buttonStyle(.plain)
+                        .accessibilityHint(showsDetails ? "Hides the details" : "Shows what was paid and what it's worth")
+                        if showsDetails {
+                            Group {
+                                Divider().padding(.leading, 16)
+                                total("Paid", paid.dollars)
+                                if fees > 0 {
+                                    Divider().padding(.leading, 16)
+                                    total("Extra spins", fees.dollars)
+                                }
+                                Divider().padding(.leading, 16)
+                                total("Value", value.dollars)
+                                Divider().padding(.leading, 16)
+                                // Slot spins and ball drops, on both devices.
+                                total("Bets", games.reduce(0) { $0 + $1.spins + $1.drops }.formatted())
+                            }
+                            .transition(.opacity)
+                        }
                     }
                     .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 26))
+                    .padding(.top, 14)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)  // plus the first header's own 14 pt: 24 pt below the navigation bar

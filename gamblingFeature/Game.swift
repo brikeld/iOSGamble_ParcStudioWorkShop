@@ -177,7 +177,7 @@ import SwiftUI
         guard mode == .features, phase == .idle, canPlay(mode), !needsPayment else { return }
         phase = .spinning
         spinsLeft -= 1
-        let win = Double.random(in: 0..<1) < Odds.winChance
+        let win = spins < Odds.demoScript.count ? Odds.demoScript[spins] : Double.random(in: 0..<1) < Odds.winChance
         spins += 1
         // The jackpot shows what this pull is for: the next upgrade.
         let jackpot = device.featureSymbols[upgrades]
