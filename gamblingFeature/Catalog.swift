@@ -69,7 +69,7 @@ struct Device: Hashable {
     let products: [Product]
     /// Index into `products` of what was bought, in its base storage.
     let start: Int
-    /// Features hands these out one by one, in this order. Holding all of them, the next win is the product above.
+    /// Features hands these out one by one, in this order. It never changes the product upward.
     let upgrades: [Upgrade]
     /// Index of Pro Storage in `upgrades`: holding it gives the product its largest storage.
     let proStorage: Int?
@@ -77,10 +77,8 @@ struct Device: Hashable {
     let board: [Int]
 
     var paid: Int { products[start].storage[0].price }
-    /// Icons only: every upgrade, then the next product. A jackpot shows the one you win three times.
-    var featureSymbols: [ReelSymbol] {
-        upgrades.map { ReelSymbol($0.name, icon: $0.icon) } + [ReelSymbol("Next \(kind)", icon: kind.lowercased())]
-    }
+    /// Icons only, one per upgrade. A jackpot shows the one you win three times.
+    var featureSymbols: [ReelSymbol] { upgrades.map { ReelSymbol($0.name, icon: $0.icon) } }
 }
 
 struct Option: Hashable {

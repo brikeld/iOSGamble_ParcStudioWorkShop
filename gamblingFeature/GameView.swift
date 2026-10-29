@@ -120,7 +120,7 @@ struct GameView: View {
                         // Landing on the product you already have shows no colour: nothing gained, nothing lost.
                         TierBoard(bins: game.bins.map { $0.map { game.device.products[$0] } }, odds: game.odds, landed: game.landedBin,
                                   outcome: game.change?.iPad == 0 ? nil : game.phase == .won ? .won : game.phase == .lost ? .lost : nil,
-                                  flashesPhoto: game.isMoment, drop: drop)
+                                  drop: drop)
                     }
                 }
             }

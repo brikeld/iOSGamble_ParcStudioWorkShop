@@ -10,7 +10,7 @@ enum Board {
         (24.0, [57.0, 129, 201, 273]), (102, [21, 93, 165, 237, 309]), (180, [57, 129, 201, 273]),
         (258, [21, 93, 165, 237, 309]), (336, [57, 129, 201, 273]),
     ].flatMap { row in row.1.map { CGRect(x: $0, y: row.0, width: 40, height: 17) } }
-    /// The bins are capsules along the bottom: 42 tall, 12 above the card's edge, 60 below the last toggles.
+    /// The bins run flush along the card's bottom, 54 tall, 60 below the last toggles.
     static let binTop = 413.0
     static let binHeight = size.height - binTop
     static let ballRadius = 11.0
@@ -169,16 +169,15 @@ enum Plinko {
     }
 }
 
-/// The toggles on a card, and the products in capsules along its bottom, each wider the likelier it is.
-/// The capsule the ball fell in takes the outcome's colour, and its light rises up the board.
+/// The toggles on a card, and the products in bins along its bottom, each wider the likelier it is.
+/// The bin the ball fell in takes the whole width, outlined in the outcome's colour, and its light rises up the board;
+/// the others come back with the next round.
 struct TierBoard: View {
     /// nil is Nothing.
     var bins: [Product?]
     var odds: [Double]
     var landed: Int?
     var outcome: Outcome?
-    /// The moment right after landing: the landed capsule shows its product's photo instead of the name.
-    var flashesPhoto: Bool
     var drop: Drop
 
     @State private var toggleWidth = 64.0
@@ -188,10 +187,10 @@ struct TierBoard: View {
             let s = geometry.size.width / Board.size.width
             let edges = Board.edges(odds)
             ZStack(alignment: .topLeading) {
-                if let landed, let outcome {
-                    Bloom(color: outcome.color, width: (edges[landed + 1] - edges[landed]) * s, scale: s)
-                        .position(x: (edges[landed] + edges[landed + 1]) / 2 * s, y: Board.binTop * s)
-                        .transition(.scale(scale: 0.3, anchor: .bottom).combined(with: .opacity))
+                if landed != nil, let outcome {
+                    Bloom(color: outcome.color, width: Board.size.width * s, scale: s)
+                        .position(x: Board.size.width / 2 * s, y: Board.binTop * s)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .bottom)))
                 }
                 ForEach(Board.toggles.indices, id: \.self) { i in
                     // The real switch, shrunk to the design's 40 pt.
@@ -202,14 +201,31 @@ struct TierBoard: View {
                         .scaleEffect(Board.toggles[i].width * s / toggleWidth)
                         .position(x: Board.toggles[i].midX * s, y: Board.toggles[i].midY * s)
                 }
-                HStack(spacing: 0) {
+                // Placed by hand rather than in an HStack, so the landed bin can grow out of its own place to the whole
+                // width, over the others as they fade.
+                ZStack(alignment: .topLeading) {
                     ForEach(bins.indices, id: \.self) { i in
-                        bin(i, width: edges[i + 1] - edges[i]).frame(width: (edges[i + 1] - edges[i]) * s)
+                        let expanded = landed == i
+                        bin(i, width: edges[i + 1] - edges[i], scale: s)
+                            .frame(width: (expanded ? Board.size.width : edges[i + 1] - edges[i]) * s, height: Board.binHeight * s)
+                            .offset(x: (expanded ? 0 : edges[i]) * s)
+                            .opacity(landed == nil || expanded ? 1 : 0)
+                            .zIndex(expanded ? 1 : 0)
                     }
                 }
-                .frame(height: Board.binHeight * s)
+                .frame(width: Board.size.width * s, height: Board.binHeight * s, alignment: .topLeading)
+                // The same line as between the bins, along their sides and bottom; its top edge is clipped off.
+                .overlay {
+                    UnevenRoundedRectangle(bottomLeadingRadius: 20, bottomTrailingRadius: 20, style: .continuous)
+                        .strokeBorder(Color(.systemGray4), lineWidth: 1)
+                        .padding(.top, -1)
+                        .opacity(landed == nil ? 1 : 0)
+                }
+                .clipShape(Rectangle())
                 .offset(y: Board.binTop * s)
             }
+            // Landing and a new round both glide: the bin widens on one smooth curve, everything else fades along.
+            .animation(.smooth(duration: 0.55), value: landed)
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(.rect(cornerRadius: 20))
         }
@@ -218,35 +234,55 @@ struct TierBoard: View {
         .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { drop.boardFrame = $0 }
     }
 
-    /// A grey capsule with the product's name. Black text, also on the tint.
-    private func bin(_ i: Int, width: Double) -> some View {
+    /// A grey bin flush with its neighbours and the card's edges, with the product's name. The landed one opens up
+    /// its photo beside the name and is outlined like the Your Product card. Black text throughout.
+    /// `width` is the bin's resting width, so its layout never swaps mid-animation: everything here only grows or fades.
+    private func bin(_ i: Int, width: Double, scale s: Double) -> some View {
         let hit = landed == i ? outcome : nil
+        let expanded = landed == i
         let name = bins[i]?.name ?? "Nothing"
-        return Group {
-            if let product = bins[i], hit != nil, flashesPhoto {
-                Image(product.image).resizable().scaledToFit().padding(.vertical, 6)
-            } else if width < 46 {
-                Image(systemName: "nosign").font(.subheadline).foregroundStyle(.secondary)  // too narrow for "Nothing"
-            } else if width < 60 {
-                // One single-line Text per word: a Text allowed to wrap hyphenates ("Noth-ing") before it shrinks.
-                VStack(spacing: 0) {
-                    ForEach(name.split(separator: " ").map(String.init), id: \.self) { word in
-                        Text(word).lineLimit(1).minimumScaleFactor(0.6)
-                    }
+        let iconOnly = width < 46 && !expanded  // too narrow for "Nothing"
+        // A narrow bin stacks its words, one per line, which then shrink rather than hyphenate ("Noth-ing").
+        let words = name.split(separator: " ").count
+        let stacked = width < 60 && !expanded
+        return HStack(spacing: expanded ? 12 : 0) {
+            Group {
+                if let product = bins[i] {
+                    Image(product.image).resizable().scaledToFit()
+                        .frame(width: expanded ? 34 * s : 0, height: 38 * s)
+                        .opacity(expanded ? 1 : 0)
+                } else {
+                    Image(systemName: "nosign").font(.subheadline).foregroundStyle(.secondary)
+                        .frame(width: iconOnly || expanded ? 22 : 0)
+                        .opacity(iconOnly || expanded ? 1 : 0)
                 }
-            } else {
-                Text(name).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
             }
+            Text(stacked ? name.replacingOccurrences(of: " ", with: "\n") : name)
+                .font(.caption2.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .lineLimit(stacked ? words : expanded ? 1 : 2)
+                .minimumScaleFactor(0.6)
+                .scaleEffect(expanded ? 13 / 11 : 1)  // up to footnote size, smoothly
+                .frame(width: iconOnly ? 0 : nil)
+                .opacity(iconOnly ? 0 : 1)
         }
-        .font(.caption.weight(.semibold))
-        .transition(.blurReplace)
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(hit?.fill ?? Color(.systemGray6), in: .capsule)
-        .padding(.horizontal, 3)
-        .padding(.bottom, 12)
+        .background(Color(.systemGray6))
+        // Always there, so they change colour and fade rather than pop in. Sides and bottom only: the top edge
+        // sits above the bin and is clipped off.
+        .overlay {
+            UnevenRoundedRectangle(bottomLeadingRadius: 20, bottomTrailingRadius: 20, style: .continuous)
+                .strokeBorder(hit?.color ?? .clear, lineWidth: 2)
+                .padding(.top, -2)
+        }
+        .overlay(alignment: .leading) {
+            if i > 0 { Rectangle().fill(Color(.systemGray4)).frame(width: 1).opacity(landed == nil ? 1 : 0) }
+        }
+        .clipped()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(name)
+        .accessibilityHidden(landed != nil && !expanded)
     }
 }
 
@@ -258,16 +294,17 @@ private struct Bloom: View {
     var scale: Double
 
     var body: some View {
+        let spread = min(max(width, 60 * scale), 160 * scale)  // a full-width bin glows wide, not over the whole board
         ZStack {
             Ellipse()
-                .fill(RadialGradient(colors: [color.opacity(0.75), color.opacity(0.25), color.opacity(0)],
-                                     center: .center, startRadius: 0, endRadius: max(width, 60 * scale) * 1.2))
-                .frame(width: max(width, 60 * scale) * 2.4, height: 300 * scale)
-                .blur(radius: 24)
+                .fill(RadialGradient(colors: [color.opacity(0.45), color.opacity(0.14), color.opacity(0)],
+                                     center: .center, startRadius: 0, endRadius: spread * 1.2))
+                .frame(width: spread * 2.4, height: 300 * scale)
+                .blur(radius: 30)
             Capsule()
-                .fill(color)
+                .fill(color.opacity(0.55))
                 .frame(width: width * 0.9, height: 8 * scale)
-                .blur(radius: 7)
+                .blur(radius: 9)
         }
         .phaseAnimator([0.85, 1.0]) { bloom, phase in
             bloom.scaleEffect(phase, anchor: .center).opacity(0.55 + 0.45 * phase)

@@ -76,10 +76,9 @@ import SwiftUI
     /// Holding the board's best product: the place to go on and win its features.
     var hasBestTierProduct: Bool { productIndex == device.board.max() }
 
-    /// Features ends once you hold every upgrade on a product above the one you ordered;
-    /// Products can always be played again.
+    /// Features ends once you hold every upgrade; Products can always be played again.
     func canPlay(_ mode: Mode) -> Bool {
-        phase != .nothing && (mode == .product || !(upgrades == device.upgrades.count && productIndex > device.start))
+        phase != .nothing && (mode == .product || upgrades < device.upgrades.count)
     }
 
     func play(_ mode: Mode) {
@@ -180,7 +179,7 @@ import SwiftUI
         spinsLeft -= 1
         let win = Double.random(in: 0..<1) < Odds.winChance
         spins += 1
-        // The jackpot shows what this pull is for: the next upgrade, or the next product.
+        // The jackpot shows what this pull is for: the next upgrade.
         let jackpot = device.featureSymbols[upgrades]
         let stops = Odds.stops(win: win)
 
@@ -205,20 +204,15 @@ import SwiftUI
         withAnimation(.smooth) { isMoment = false }
     }
 
-    /// A win adds the next upgrade, and with all of them the product above. A loss takes every upgrade
+    /// A win adds the next upgrade; Features never moves the product up. A loss takes every upgrade
     /// but keeps the product; with none left, it drops a product and hands back the first upgrade, and on the
     /// cheapest product it takes the product itself.
     func settle(win: Bool) {
         var change = Change()
         if win {
             phase = .won
-            if upgrades < device.upgrades.count {
-                change.upgradeWon = upgrades
-                upgrades += 1
-            } else {
-                productIndex += 1
-                change.iPad = 1
-            }
+            change.upgradeWon = upgrades
+            upgrades += 1
         } else if isLastChance {
             phase = .nothing
         } else {
@@ -269,15 +263,16 @@ import SwiftUI
         assert(down.phase == .nothing, "then itself")
 
         let up = Game()
-        for _ in 0...Catalog.iPad.upgrades.count { up.settle(win: true) }
-        assert(up.productIndex == Catalog.iPad.start + 1 && up.upgrades == Catalog.iPad.upgrades.count && !up.canPlay(.features),
-               "every upgrade, then the iPad above ends Features")
+        for _ in 0..<Catalog.iPad.upgrades.count { up.settle(win: true) }
+        assert(up.productIndex == Catalog.iPad.start && up.upgrades == Catalog.iPad.upgrades.count && !up.canPlay(.features),
+               "every upgrade ends Features, on the same iPad")
 
-        // The iPhone climbs the same way, with no Pro Storage to price.
+        // The iPhone fills up the same way, with no Pro Storage to price.
         let phone = Game(device: Catalog.iPhone)
         assert(phone.value == Catalog.iPhone.paid && phone.profit == 0, "the iPhone starts as ordered")
-        for _ in 0...Catalog.iPhone.upgrades.count { phone.settle(win: true) }
-        assert(phone.product.name == "iPhone 18 Pro" && phone.value == 1199 + 39 + 49 + 199 + 249, "every iPhone upgrade, then the iPhone above")
+        for _ in 0..<Catalog.iPhone.upgrades.count { phone.settle(win: true) }
+        assert(phone.product.name == "iPhone Air" && phone.value == 1099 + 39 + 49 + 199 + 249 && !phone.canPlay(.features),
+               "every iPhone upgrade, on the same iPhone")
     }
     #endif
 }
