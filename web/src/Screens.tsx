@@ -4,9 +4,9 @@ import type { ReactNode } from 'react'
 import * as Catalog from './catalog'
 import type { Upgrade } from './catalog'
 import { useGame } from './context'
-import { dollars, profitColor, profitText } from './money'
+import { dollars } from './money'
 import { useStore } from './store'
-import type { Game, Mode } from './game'
+import type { Mode } from './game'
 
 /**
  * A product: its picture in a fixed-size slot (so text lines up across rows whatever the photo's shape),
@@ -161,43 +161,6 @@ export function ChooseGameView({ current, onSelect, onChoose }: ChooseProps) {
         <ChoiceRow icon="/icons/features.svg" title="Features" description={`Max out your ${kind}’s technical configuration and experience.`} onClick={() => onChoose('features')} />
         <ChoiceRow icon="/icons/products.svg" title="Products" description="Upgrade your product to another tier." onClick={() => onChoose('product')} />
       </div>
-    </div>
-  )
-}
-
-/** What each device's game ends with, then the whole order's money: both devices added together. */
-export function SummaryView({ games, onDone }: { games: Game[]; onDone: () => void }) {
-  const sum = (f: (g: Game) => number) => games.reduce((total, g) => total + f(g), 0)
-  const profit = sum((g) => g.profit)
-  return (
-    <div className="summary">
-      <header className="bar">
-        <h2>Summary</h2>
-        <button className="link" onClick={onDone}>Done</button>
-      </header>
-      {games.map((game) => (
-        <div key={game.device.kind} className="summary-device">
-          <h3 className="header">Your {game.device.kind}</h3>
-          <section className="card-list product-list">
-            {game.s.phase === 'nothing' ? (
-              <div className="row">📦 Nothing</div>
-            ) : (
-              <>
-                <ProductRow name={game.product.name} image={Catalog.productImage(game.product)} configuration={game.configuration} />
-                {game.held.map((u) => <UpgradeRow key={u.name} upgrade={u} />)}
-              </>
-            )}
-          </section>
-        </div>
-      ))}
-      <section className="card-list">
-        <div className="between"><span>Paid</span><span>{dollars(sum((g) => g.paid))}</span></div>
-        {sum((g) => g.s.fees) > 0 && <div className="between"><span>Extra spins</span><span>{dollars(sum((g) => g.s.fees))}</span></div>}
-        <div className="between"><span>Value</span><span>{dollars(sum((g) => g.value))}</span></div>
-        <div className="between"><span>Profit or Loss</span><span style={{ color: profitColor(profit) }}>{profitText(profit)}</span></div>
-        {/* Slot spins and ball drops, on both devices. */}
-        <div className="between"><span>Bets</span><span>{sum((g) => g.s.spins + g.s.drops).toLocaleString('en-US')}</span></div>
-      </section>
     </div>
   )
 }

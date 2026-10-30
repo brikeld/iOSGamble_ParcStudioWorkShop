@@ -5,7 +5,8 @@ import { GameContext } from './context'
 import { Game } from './game'
 import { FaceIDIntro } from './FaceIDIntro'
 import { GameView } from './GameView'
-import { ChooseGameView, OrderView, SummaryView } from './Screens'
+import { ChooseGameView, OrderView } from './Screens'
+import { SummaryView } from './SummaryView'
 import { Sheet } from './Sheet'
 import { useStore } from './store'
 
@@ -44,6 +45,7 @@ export function App() {
           <Sheet tall>
             <SummaryView
               games={games}
+              onClose={() => game.showSummary(false)}
               onDone={() => { setGames(newGames()); setCurrent(0); setScreen('order') }}
             />
           </Sheet>

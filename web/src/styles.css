@@ -60,7 +60,7 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .header-row { margin-top: 0; }
 .header-row .header { margin-bottom: 0; }
 
-.bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; gap: 12px; min-height: 52px; }
+.bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; gap: 12px; min-height: 48px; } /* 12px above its 36px buttons, none below */
 .bar h2 { font-size: 17px; flex: 1; }
 .link { color: var(--tint); font-size: 17px; }
 .glass-circle { /* Figma "Button - Liquid Glass - Symbol": three stacked fills (white 65%, #ddd colour-burn, #f7f7f7 darken) and a wide, faint shadow */
@@ -155,16 +155,16 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .game .product-text .secondary { color: #afafaf; }
 .game .product-card > strong { font-size: 17px; } /* iOS .headline */
 .game .bar { padding-bottom: 0; position: relative; z-index: 2; }
-.scroll { flex: 1; overflow-y: auto; padding: 48px 16px 16px; } /* 48px between the nav bar and the body */
+.scroll { flex: 1; overflow-y: auto; padding: 24px 16px 16px; } /* 24px between the nav bar and the body, on every page that has one */
 .app > .bar { padding-bottom: 0; }
-.app > .bar + .choose-page { padding-top: 48px; }
+.app > .bar + .choose-page { padding-top: 24px; }
 .machine { display: flex; flex-direction: column; gap: 8px; }
 .machine > .header { margin-top: 0; }
 .machine > * + .header-row, .machine > .winnings + .header-row { margin-top: 20px; }
 .controls { padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); }
 .choices { display: flex; flex-direction: column; gap: 8px; }
 /* SwiftUI .controlSize(.large) capsule buttons: 52pt tall (HIG's Large size) with the body text style, 17pt Regular unless the code sets a weight. */
-.controls .choices:not(.row-choices) button { height: 52px; font-size: 17px; font-weight: 400; }
+.controls .choices button { height: 52px; font-size: 17px; font-weight: 400; }
 .controls .prominent.black { font-size: 17px; font-weight: 400; }
 
 .product-card { position: relative; z-index: 2; background: var(--card); border: 2px solid transparent; border-radius: 22px; padding: 16px; display: flex; justify-content: space-between; align-items: center; transition: border-color .4s; }
@@ -277,8 +277,6 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .alert-actions button + button { border-left: 1px solid var(--gray4); }
 .alert-actions .destructive { color: #ff3b30; font-weight: 590; }
 
-.summary { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
-.summary .bar { padding-left: 0; padding-right: 0; }
 
 /* Apple Pay */
 .pay { padding: 24px 24px 53px; outline: none; min-height: 349px; display: flex; flex-direction: column; user-select: none; }
@@ -308,9 +306,6 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .segmented { display: flex; background: rgba(120, 120, 128, 0.12); border-radius: 10px; padding: 2px; }
 .segmented button { flex: 1; padding: 7px 8px; border-radius: 8px; font-size: 14px; font-weight: 500; }
 .segmented button.selected { background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); font-weight: 590; }
-.summary-device { display: flex; flex-direction: column; gap: 12px; }
-.row-choices { flex-direction: row; }
-.row-choices button { flex: 1; height: 100%; font-weight: 590; font-size: 17px; line-height: 1.1; padding: 0 12px; }
 
 /* Face ID intro: a dark panel pinned under the status area, as on iOS. */
 .faceid { position: absolute; inset: 0; z-index: 20; background: var(--bg); display: flex; align-items: flex-start; justify-content: center; padding-top: calc(max(env(safe-area-inset-top), 59px) + 8px); transition: opacity .5s cubic-bezier(0.22, 1, 0.36, 1); }
@@ -323,3 +318,45 @@ hr { border: 0; border-top: 1px solid var(--gray4); width: 100%; margin: 8px 0; 
 .faceid-glyph.gone { opacity: 0; animation: none; }
 .faceid-detecting { opacity: 0; transition: opacity .5s; max-width: none; }
 .faceid-detecting.shown { opacity: 1; }
+
+/* Summary, as in the iOS app's SummaryView */
+.summary { padding: 0 16px 24px; letter-spacing: -0.01em; }
+.sum-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; height: 48px; }
+.glass-pill { height: 36px; padding: 0 16px; border-radius: 999px; color: var(--tint); font-size: 17px; font-weight: 590; background: linear-gradient(#f7f7f7, #f7f7f7), linear-gradient(#ddd, #ddd), linear-gradient(rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.65)); background-blend-mode: darken, color-burn, normal; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12); }
+.sum-title { font-size: 34px; font-weight: 700; letter-spacing: 0.37px; line-height: 41px; margin: 4px 0 0; }
+.sum-content { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; } /* plus the first header's own 14px: 24px below the title */
+.sum-header { font-size: 15px; font-weight: 400; color: var(--secondary); padding: 14px 16px 0; margin-bottom: 8px; }
+.sum-card { position: relative; background: var(--card); border-radius: 26px; }
+.sum-result::after { content: ''; position: absolute; inset: 0; border: 2px solid transparent; border-radius: 26px; pointer-events: none; }
+.sum-result.won::after { border-color: var(--won); }
+.sum-result.lost::after { border-color: var(--lost); }
+.sum-row { display: flex; align-items: center; gap: 14px; padding: 10px 16px; }
+.sum-row.faded { opacity: 0.5; }
+.sum-thumb { flex: none; width: 44px; height: 48px; display: grid; place-items: center; color: var(--secondary); }
+.sum-thumb img { max-width: 44px; max-height: 48px; object-fit: contain; }
+.sum-symbol { width: 24px; height: 24px; }
+.sum-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.sum-text strong { font-size: 16px; font-weight: 590; }
+.sum-text span { font-size: 15px; color: var(--secondary); }
+.sum-trailing { font-size: 16px; color: var(--secondary); font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: 8px; }
+.sum-rule { margin: 0 0 0 16px; width: auto; border: 0; border-top: 0.33px solid rgba(60, 60, 67, 0.29); }
+.sum-rule.inset { margin-left: 74px; }
+.sum-change { display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 37px; } /* the line sits under the middle of the photo */
+.sum-bar-line { width: 2px; height: 22px; border-radius: 999px; background: #c4c4c7; }
+.sum-bar-line.won { background: var(--won); }
+.sum-bar-line.lost { background: var(--lost); }
+.sum-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 590; padding: 4px 9px; border-radius: 999px; color: var(--secondary); background: rgba(118, 118, 128, 0.12); }
+.sum-chip.won { color: var(--won); background: rgba(52, 199, 89, 0.2); }
+.sum-chip.lost { color: var(--lost); background: rgba(255, 149, 0, 0.16); }
+.sum-money { margin-top: 14px; overflow: hidden; }
+.sum-profit { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px; font-size: 17px; text-align: left; }
+.sum-profit > span:first-child { flex: 1; }
+.sum-profit-value { font-variant-numeric: tabular-nums; }
+.sum-chev { color: var(--tertiary); transition: transform .35s cubic-bezier(0.22, 1, 0.36, 1); }
+.sum-chev.open { transform: rotate(90deg); }
+/* Opens and closes smoothly: a grid row growing from 0 to its content. */
+.sum-details { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .35s cubic-bezier(0.22, 1, 0.36, 1), opacity .35s; }
+.sum-details.open { grid-template-rows: 1fr; opacity: 1; }
+.sum-details > div { overflow: hidden; }
+.sum-total { display: flex; justify-content: space-between; padding: 12px 16px; font-size: 17px; }
+.sum-total span:last-child { color: var(--secondary); font-variant-numeric: tabular-nums; }

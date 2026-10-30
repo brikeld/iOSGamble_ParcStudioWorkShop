@@ -36,6 +36,8 @@ export function GameView({ onBack }: { onBack: () => void }) {
 
   useEffect(() => { Ticker.prepare() }, [])
   useEffect(() => { if (s.landedBin === undefined) drop.reset() }, [s.landedBin, drop]) // a new round
+  // The choice that follows a landing is taller than the slider, so once it replaces the slider, keep the board's bins in view above it.
+  useEffect(() => { if (s.landedBin !== undefined && !s.isMoment) drop.revealBoard('smooth') }, [s.landedBin, s.isMoment, drop])
 
   useEffect(() => {
     const old = previous.current
@@ -189,15 +191,15 @@ export function GameView({ onBack }: { onBack: () => void }) {
     // Also when a drop is owed: coming back from Features after a drop, the next one must be paid for first.
     if (!s.isMoment && (s.phase === 'won' || s.phase === 'lost' || (s.phase === 'idle' && game.needsDropPayment))) {
       return (
-        // Side by side, in the slider's height, so the board above never has to make room.
-        <div className="choices row-choices" style={{ height: SLIDER_HEIGHT }}>
-          <button className="glass" data-testid="keep" onClick={() => game.showSummary(true)}>Take winnings</button>
+        // The same pair as the Features page: the main action in blue on top, the quieter one below.
+        <div className="choices">
           {/* On the best product another drop can only go down; offer to win its features instead. */}
           {game.hasBestTierProduct && game.canPlay('features') ? (
             <button className="prominent" data-testid="gambleFeatures" onClick={() => game.play('features')}>Gamble for features</button>
           ) : (
             <button className="prominent" data-testid="anotherTry" onClick={() => setPaysForDrop(true)}>{dollars(game.dropPrice)} for another try</button>
           )}
+          <button className="glass" data-testid="keep" onClick={() => game.showSummary(true)}>Take winnings</button>
         </div>
       )
     }
